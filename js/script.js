@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             aboutContent1: "The Digital Wooden Fish is inspired by the Buddhist tradition of wooden fish drums used during chanting and meditation. In many Asian cultures, tapping on a wooden fish is believed to accumulate merit and bring good fortune.",
             aboutContent2: "Our digital version brings this mindful practice to your screen, offering a moment of calm in your busy day. Each tap represents a moment of mindfulness and presence.",
             culturePerspectiveTitle: "Eastern & Western Cultural Perspectives",
-            easternPerspective: "In Eastern Buddhist tradition, the wooden fish (mu yu) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (gong de) – positive spiritual energy that contributes to one's karma and future well-being.",
+            easternPerspective: "In Eastern Buddhist tradition, the wooden fish (木鱼, mù yú) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (功德, gōng dé) – positive spiritual energy that contributes to one's karma and future well-being.",
             westernComparison: "For Western audiences, this practice can be compared to several familiar concepts:",
             westernPoint1: "Similar to prayer beads or rosaries in Christianity, where repetitive prayers accumulate spiritual benefits",
             westernPoint2: "Comparable to mindfulness practices in Western psychology, promoting present-moment awareness",
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             aboutContent1: "电子木鱼灵感来源于佛教传统中诵经和冥想时使用的木鱼。在许多亚洲文化中，敲击木鱼被认为能积累功德并带来好运。",
             aboutContent2: "我们的数字版本将这种正念练习带到您的屏幕上，在忙碌的一天中提供一刻宁静。每一次敲击代表着一刻的正念与当下。",
             culturePerspectiveTitle: "东西方文化视角",
-            easternPerspective: "在东方佛教传统中，木鱼（木鱼，mù yú）象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德（功德，gōng dé）的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
+            easternPerspective: "在东方佛教传统中，木鱼象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
             westernComparison: "对西方受众来说，这种修行可以比作几个熟悉的概念：",
             westernPoint1: "类似于基督教中的念珠或玫瑰经，重复的祈祷积累精神福祉",
             westernPoint2: "相当于西方心理学中的正念练习，促进当下的觉知",
@@ -148,7 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 更新各部分标题
         document.querySelectorAll('h2').forEach(h2 => {
-            if (h2.textContent.includes('Tap for Merit') || h2.textContent.includes('Tap for 功德') || h2.textContent.includes('敲击获取功德')) {
+            // 更灵活的匹配逻辑，捕获所有可能的混合形式
+            if (h2.textContent.includes('Tap for Merit') || 
+                h2.textContent.includes('Tap for 功德') || 
+                h2.textContent.includes('敲击获取功德') ||
+                h2.textContent.includes('Tap') && h2.textContent.includes('功德') ||
+                h2.textContent.includes('Merit') && h2.textContent.includes('敲击')) {
+                // 直接替换为对应语言的完整文本
                 h2.textContent = translations[currentLang].tapForMerit;
             } else if (h2.textContent.includes('About') || h2.textContent.includes('关于')) {
                 h2.textContent = translations[currentLang].aboutTitle;
@@ -187,10 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (nextElement && nextElement.tagName === 'UL') {
                         const listItems = nextElement.querySelectorAll('li');
                         if (listItems.length >= 4) {
-                            listItems[0].textContent = translations[currentLang].westernPoint1;
-                            listItems[1].textContent = translations[currentLang].westernPoint2;
-                            listItems[2].textContent = translations[currentLang].westernPoint3;
-                            listItems[3].textContent = translations[currentLang].westernPoint4;
+                            // 为了保持格式，使用innerHTML而不是textContent
+                            if (currentLang === 'en') {
+                                listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
+                                listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
+                                listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
+                                listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
+                            } else {
+                                listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
+                                listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
+                                listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
+                                listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
+                            }
                         }
                         nextElement = nextElement.nextElementSibling;
                     }
@@ -354,213 +368,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 敲击木鱼函数
-    function tapWoodenFish() {
-        // 获取当前时间
-        const currentTime = Date.now();
-        
-        // 判断是否为快速点击（点击间隔小于阈值）
-        const isQuickTap = (currentTime - lastTapTime) < tapInterval;
-        lastTapTime = currentTime;
-        
-        // 根据点击速度更新连续点击计数
-        if (isQuickTap) {
-            consecutiveTaps++;
-            
-            // 每次快速点击时都显示连击提示
-            if (consecutiveTaps > 1) {
-                showComboHint(consecutiveTaps);
-            }
-        } else {
-            // 如果点击间隔过长，重置连击计数
-            consecutiveTaps = 1;
-        }
-        
-        // 判断是否触发暴击（连续快速点击达到阈值且不在冷却状态）
-        const isCritical = consecutiveTaps >= tapThreshold && !criticalCooldown;
-        
-        // 如果触发暴击，重置连击计数并设置冷却时间
-        if (isCritical) {
-            consecutiveTaps = 0;
-            criticalCooldown = true;
-            
-            // 重新设置随机目标连击数
-            tapThreshold = Math.floor(Math.random() * 13) + 8;
-            
-            // 暴击后3秒冷却时间
-            setTimeout(() => {
-                criticalCooldown = false;
-            }, 3000);
-        }
-        
-        const meritIncrease = isCritical ? 5 : 1;
-        
-        // 播放动画
-        woodenFish.classList.add('tapped');
-        if (isCritical) {
-            woodenFish.classList.add('critical');
-            setTimeout(() => {
-                woodenFish.classList.remove('critical');
-            }, 500);
-        }
-        setTimeout(() => {
-            woodenFish.classList.remove('tapped');
-        }, 100);
-        
-        // 播放音效
-        if (tapSound.paused) {
-            tapSound.currentTime = 0;
-            tapSound.play().catch(e => console.log('无法播放音效:', e));
-        } else {
-            const newSound = tapSound.cloneNode();
-            newSound.play().catch(e => console.log('无法播放音效:', e));
-        }
-        
-        // 增加功德
-        meritCount += meritIncrease;
-        meritCountElement.textContent = meritCount;
-        
-        // 显示功德弹出动画
-        const meritText = document.createElement('div');
-        // 根据是否有心愿显示不同的文本
-        if (userWish) {
-            meritText.textContent = `${userWish} +${meritIncrease}`;
-            meritText.style.maxWidth = '200px';
-            meritText.style.overflow = 'hidden';
-            meritText.style.textOverflow = 'ellipsis';
-            meritText.style.whiteSpace = 'nowrap';
-        } else {
-            meritText.textContent = `+${meritIncrease}`;
-        }
-        meritText.classList.add('merit-animation');
-        
-        // 暴击时添加特殊样式
-        if (isCritical) {
-            meritText.classList.add('critical-hit');
-        }
-        
-        // 随机位置 - 在木鱼上方
-        const rect = woodenFish.getBoundingClientRect();
-        const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
-        const y = rect.top + rect.height/2;
-        
-        meritText.style.position = 'fixed';
-        meritText.style.left = `${x}px`;
-        meritText.style.top = `${y}px`;
-        meritText.style.zIndex = '1000';
-        meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
-        meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
-        meritText.style.fontWeight = 'bold';
-        meritText.style.pointerEvents = 'none';
-        
-        document.body.appendChild(meritText);
-        
-        // 暴击时添加额外的视觉效果
-        if (isCritical) {
-            // 添加光晕效果
-            const glow = document.createElement('div');
-            glow.className = 'critical-glow';
-            glow.style.position = 'fixed';
-            glow.style.left = `${rect.left + rect.width/2 - 100}px`;
-            glow.style.top = `${rect.top + rect.height/2 - 100}px`;
-            glow.style.width = '200px';
-            glow.style.height = '200px';
-            glow.style.borderRadius = '50%';
-            glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.5) 0%, rgba(255,107,0,0) 70%)';
-            glow.style.zIndex = '10';
-            glow.style.pointerEvents = 'none';
-            document.body.appendChild(glow);
-            
-            // 创建粒子效果
-            for (let i = 0; i < 12; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'critical-particle';
-                particle.style.position = 'fixed';
-                particle.style.left = `${rect.left + rect.width/2}px`;
-                particle.style.top = `${rect.top + rect.height/2}px`;
-                particle.style.width = '10px';
-                particle.style.height = '10px';
-                particle.style.borderRadius = '50%';
-                particle.style.backgroundColor = '#FF6B00';
-                particle.style.zIndex = '10';
-                particle.style.pointerEvents = 'none';
-                
-                // 使用style设置动画变量
-                const rotation = i * 30;
-                particle.style.setProperty('--rotate', `${rotation}deg`);
-                particle.style.opacity = '0';
-                particle.style.animation = 'particle-burst 0.8s ease-out forwards';
-                document.body.appendChild(particle);
-                
-                // 移除粒子
-                setTimeout(() => {
-                    document.body.removeChild(particle);
-                }, 800);
-            }
-            
-            // 移除光晕
-            setTimeout(() => {
-                document.body.removeChild(glow);
-            }, 800);
-        }
-        
-        // 删除动画元素
-        setTimeout(() => {
-            document.body.removeChild(meritText);
-        }, 1500);
-    }
-    
-    // 创建添加波纹效果的函数
-    function createRippleEffect(element, x, y) {
-        const ripple = document.createElement('div');
-        ripple.className = 'ripple';
-        
-        const rect = element.getBoundingClientRect();
-        
-        ripple.style.left = `${x - rect.left}px`;
-        ripple.style.top = `${y - rect.top}px`;
-        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        
-        element.appendChild(ripple);
-        
-        // 动画完成后移除波纹元素
-        setTimeout(() => {
-            if (element.contains(ripple)) {
-                element.removeChild(ripple);
-            }
-        }, 800);
-    }
-    
     // 点击或触摸事件控制变量
     let lastEventTime = 0;
-    const eventThreshold = 300; // 事件间隔阈值(毫秒)
+    const eventThreshold = 500; // 事件间隔阈值(毫秒)，增加阈值防止重复触发
+    let isProcessingTap = false; // 新增标志，表示正在处理敲击事件
     
     // 点击事件 - 仅用于非触摸设备
     if (!isMobile) {
         woodenFish.addEventListener('click', function(e) {
             e.preventDefault();
             
+            const now = Date.now();
+            
+            // 如果事件触发太快或正在处理中，忽略它
+            if (now - lastEventTime < eventThreshold || isProcessingTap) {
+                return;
+            }
+            
+            lastEventTime = now;
+            isProcessingTap = true;
+            
             // 添加波纹效果
             createRippleEffect(woodenFish, e.clientX, e.clientY);
             
             // 敲击木鱼
             tapWoodenFish();
+            
+            // 设置延时，防止短时间内重复触发
+            setTimeout(() => {
+                isProcessingTap = false;
+            }, 100);
         });
     }
     
     // 触摸事件 - 用于所有设备，但在触摸设备上会阻止点击事件
     woodenFish.addEventListener('touchstart', function(e) {
         e.preventDefault(); // 阻止后续的鼠标事件
+        e.stopPropagation(); // 阻止事件冒泡
         
         const now = Date.now();
         
-        // 如果事件触发太快，忽略它
-        if (now - lastEventTime < eventThreshold) {
+        // 如果事件触发太快或正在处理中，忽略它
+        if (now - lastEventTime < eventThreshold || isProcessingTap) {
             return;
         }
         
         lastEventTime = now;
+        isProcessingTap = true;
         
         // 添加波纹效果
         const touch = e.touches[0];
@@ -568,12 +422,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 敲击木鱼
         tapWoodenFish();
-    });
+        
+        // 设置延时，防止短时间内重复触发
+        setTimeout(() => {
+            isProcessingTap = false;
+        }, 100);
+    }, { passive: false });
     
     // 阻止触摸事件后的点击事件
     woodenFish.addEventListener('touchend', function(e) {
         e.preventDefault();
-    });
+        e.stopPropagation();
+    }, { passive: false });
+    
+    woodenFish.addEventListener('touchmove', function(e) {
+        e.preventDefault(); // 防止滑动时意外触发
+    }, { passive: false });
     
     // 键盘空格事件
     document.addEventListener('keydown', (event) => {
@@ -582,14 +446,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const now = Date.now();
             
-            // 如果事件触发太快，忽略它
-            if (now - lastEventTime < eventThreshold) {
+            // 如果事件触发太快或正在处理中，忽略它
+            if (now - lastEventTime < eventThreshold || isProcessingTap) {
                 return;
             }
             
             lastEventTime = now;
+            isProcessingTap = true;
             
             tapWoodenFish();
+            
+            // 设置延时，防止短时间内重复触发
+            setTimeout(() => {
+                isProcessingTap = false;
+            }, 100);
         }
     });
     
@@ -795,5 +665,190 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 300);
             }, 1000);
         }, 10);
+    }
+
+    // 创建添加波纹效果的函数
+    function createRippleEffect(element, x, y) {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        
+        const rect = element.getBoundingClientRect();
+        
+        ripple.style.left = `${x - rect.left}px`;
+        ripple.style.top = `${y - rect.top}px`;
+        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        
+        element.appendChild(ripple);
+        
+        // 动画完成后移除波纹元素
+        setTimeout(() => {
+            if (element.contains(ripple)) {
+                element.removeChild(ripple);
+            }
+        }, 800);
+    }
+
+    // 敲击木鱼函数
+    function tapWoodenFish() {
+        // 获取当前时间
+        const currentTime = Date.now();
+        
+        // 判断是否为快速点击（点击间隔小于阈值）
+        const isQuickTap = (currentTime - lastTapTime) < tapInterval;
+        lastTapTime = currentTime;
+        
+        // 根据点击速度更新连续点击计数
+        if (isQuickTap) {
+            consecutiveTaps++;
+            
+            // 每次快速点击时都显示连击提示
+            if (consecutiveTaps > 1) {
+                showComboHint(consecutiveTaps);
+            }
+        } else {
+            // 如果点击间隔过长，重置连击计数
+            consecutiveTaps = 1;
+        }
+        
+        // 判断是否触发暴击（连续快速点击达到阈值且不在冷却状态）
+        const isCritical = consecutiveTaps >= tapThreshold && !criticalCooldown;
+        
+        // 如果触发暴击，重置连击计数并设置冷却时间
+        if (isCritical) {
+            consecutiveTaps = 0;
+            criticalCooldown = true;
+            
+            // 重新设置随机目标连击数
+            tapThreshold = Math.floor(Math.random() * 13) + 8;
+            
+            // 暴击后3秒冷却时间
+            setTimeout(() => {
+                criticalCooldown = false;
+            }, 3000);
+        }
+        
+        const meritIncrease = isCritical ? 5 : 1;
+        
+        // 播放动画
+        woodenFish.classList.add('tapped');
+        if (isCritical) {
+            woodenFish.classList.add('critical');
+            setTimeout(() => {
+                woodenFish.classList.remove('critical');
+            }, 500);
+        }
+        setTimeout(() => {
+            woodenFish.classList.remove('tapped');
+        }, 100);
+        
+        // 改进音频播放逻辑，防止重复播放
+        try {
+            // 总是重置并使用主音频实例
+            tapSound.pause();
+            tapSound.currentTime = 0;
+            const playPromise = tapSound.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    console.log('无法播放音效:', e);
+                });
+            }
+        } catch (e) {
+            console.log('音频播放错误:', e);
+        }
+        
+        // 增加功德
+        meritCount += meritIncrease;
+        meritCountElement.textContent = meritCount;
+        
+        // 显示功德弹出动画
+        const meritText = document.createElement('div');
+        // 根据是否有心愿显示不同的文本
+        if (userWish) {
+            meritText.textContent = `${userWish} +${meritIncrease}`;
+            meritText.style.maxWidth = '200px';
+            meritText.style.overflow = 'hidden';
+            meritText.style.textOverflow = 'ellipsis';
+            meritText.style.whiteSpace = 'nowrap';
+        } else {
+            meritText.textContent = `+${meritIncrease}`;
+        }
+        meritText.classList.add('merit-animation');
+        
+        // 暴击时添加特殊样式
+        if (isCritical) {
+            meritText.classList.add('critical-hit');
+        }
+        
+        // 随机位置 - 在木鱼上方
+        const rect = woodenFish.getBoundingClientRect();
+        const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
+        const y = rect.top + rect.height/2;
+        
+        meritText.style.position = 'fixed';
+        meritText.style.left = `${x}px`;
+        meritText.style.top = `${y}px`;
+        meritText.style.zIndex = '1000';
+        meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
+        meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
+        meritText.style.fontWeight = 'bold';
+        meritText.style.pointerEvents = 'none';
+        
+        document.body.appendChild(meritText);
+        
+        // 暴击时添加额外的视觉效果
+        if (isCritical) {
+            // 添加光晕效果
+            const glow = document.createElement('div');
+            glow.className = 'critical-glow';
+            glow.style.position = 'fixed';
+            glow.style.left = `${rect.left + rect.width/2 - 100}px`;
+            glow.style.top = `${rect.top + rect.height/2 - 100}px`;
+            glow.style.width = '200px';
+            glow.style.height = '200px';
+            glow.style.borderRadius = '50%';
+            glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.5) 0%, rgba(255,107,0,0) 70%)';
+            glow.style.zIndex = '10';
+            glow.style.pointerEvents = 'none';
+            document.body.appendChild(glow);
+            
+            // 创建粒子效果
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'critical-particle';
+                particle.style.position = 'fixed';
+                particle.style.left = `${rect.left + rect.width/2}px`;
+                particle.style.top = `${rect.top + rect.height/2}px`;
+                particle.style.width = '10px';
+                particle.style.height = '10px';
+                particle.style.borderRadius = '50%';
+                particle.style.backgroundColor = '#FF6B00';
+                particle.style.zIndex = '10';
+                particle.style.pointerEvents = 'none';
+                
+                // 使用style设置动画变量
+                const rotation = i * 30;
+                particle.style.setProperty('--rotate', `${rotation}deg`);
+                particle.style.opacity = '0';
+                particle.style.animation = 'particle-burst 0.8s ease-out forwards';
+                document.body.appendChild(particle);
+                
+                // 移除粒子
+                setTimeout(() => {
+                    document.body.removeChild(particle);
+                }, 800);
+            }
+            
+            // 移除光晕
+            setTimeout(() => {
+                document.body.removeChild(glow);
+            }, 800);
+        }
+        
+        // 删除动画元素
+        setTimeout(() => {
+            document.body.removeChild(meritText);
+        }, 1500);
     }
 }); 
