@@ -43,6 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
             customizeWish: "Customize Wish",
             share: "Share",
             aboutTitle: "About Digital Wooden Fish",
+            aboutContent1: "The Digital Wooden Fish is inspired by the Buddhist tradition of wooden fish drums used during chanting and meditation. In many Asian cultures, tapping on a wooden fish is believed to accumulate merit and bring good fortune.",
+            aboutContent2: "Our digital version brings this mindful practice to your screen, offering a moment of calm in your busy day. Each tap represents a moment of mindfulness and presence.",
+            culturePerspectiveTitle: "Eastern & Western Cultural Perspectives",
+            easternPerspective: "In Eastern Buddhist tradition, the wooden fish (木鱼, mù yú) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (功德, gōng dé) – positive spiritual energy that contributes to one's karma and future well-being.",
+            westernComparison: "For Western audiences, this practice can be compared to several familiar concepts:",
+            westernPoint1: "Similar to prayer beads or rosaries in Christianity, where repetitive prayers accumulate spiritual benefits",
+            westernPoint2: "Comparable to mindfulness practices in Western psychology, promoting present-moment awareness",
+            westernPoint3: "Like digital gratitude journals that help cultivate appreciation and positive mental states",
+            westernPoint4: "Akin to meditation apps that offer moments of pause and reflection in daily life",
+            culturalConclusion: "While Western traditions often emphasize personal salvation or individual well-being, the Eastern concept of merit focuses on both personal spiritual growth and benefiting others. By tapping the wooden fish, you participate in a centuries-old tradition reimagined for the digital age – bringing together Eastern spiritual practices with contemporary Western mindfulness approaches.",
             howToUseTitle: "How to Use",
             tapFishTitle: "Tap the Fish",
             tapFishDesc: "Click on the wooden fish or press spacebar to tap",
@@ -73,6 +83,16 @@ document.addEventListener('DOMContentLoaded', () => {
             customizeWish: "心愿DIY",
             share: "分享",
             aboutTitle: "关于电子木鱼",
+            aboutContent1: "电子木鱼灵感来源于佛教传统中诵经和冥想时使用的木鱼。在许多亚洲文化中，敲击木鱼被认为能积累功德并带来好运。",
+            aboutContent2: "我们的数字版本将这种正念练习带到您的屏幕上，在忙碌的一天中提供一刻宁静。每一次敲击代表着一刻的正念与当下。",
+            culturePerspectiveTitle: "东西方文化视角",
+            easternPerspective: "在东方佛教传统中，木鱼象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
+            westernComparison: "对西方受众来说，这种修行可以比作几个熟悉的概念：",
+            westernPoint1: "类似于基督教中的念珠或玫瑰经，重复的祈祷积累精神福祉",
+            westernPoint2: "相当于西方心理学中的正念练习，促进当下的觉知",
+            westernPoint3: "如同数字感恩日记，帮助培养感激之情和积极的心理状态",
+            westernPoint4: "类似于冥想应用程序，在日常生活中提供暂停和反思的时刻",
+            culturalConclusion: "西方传统通常强调个人救赎或个人福祉，而东方功德概念同时关注个人精神成长和利益他人。通过敲击电子木鱼，您参与了一个为数字时代重新构想的古老传统——将东方精神实践与当代西方正念方法结合在一起。",
             howToUseTitle: "使用方法",
             tapFishTitle: "敲击木鱼",
             tapFishDesc: "点击木鱼或按空格键敲击",
@@ -116,14 +136,59 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 更新各部分标题
         document.querySelectorAll('h2').forEach(h2 => {
-            if (h2.textContent.includes('Tap for Merit')) {
+            if (h2.textContent.includes('Tap for Merit') || h2.textContent.includes('Tap for 功德')) {
                 h2.textContent = `Tap for ${translations[currentLang].merit}`;
-            } else if (h2.textContent.includes('About')) {
+            } else if (h2.textContent.includes('About') || h2.textContent.includes('关于')) {
                 h2.textContent = translations[currentLang].aboutTitle;
-            } else if (h2.textContent.includes('How to Use')) {
+            } else if (h2.textContent.includes('How to Use') || h2.textContent.includes('使用方法')) {
                 h2.textContent = translations[currentLang].howToUseTitle;
             }
         });
+        
+        // 更新关于电子木鱼部分内容
+        const aboutSection = document.querySelector('section:nth-of-type(2)');
+        if (aboutSection) {
+            const paragraphs = aboutSection.querySelectorAll('.prose p');
+            if (paragraphs.length >= 2) {
+                paragraphs[0].textContent = translations[currentLang].aboutContent1;
+                paragraphs[1].textContent = translations[currentLang].aboutContent2;
+            }
+            
+            // 更新东西方文化视角部分
+            const h3Elements = aboutSection.querySelectorAll('h3');
+            for (const h3 of h3Elements) {
+                if (h3.textContent.includes('Eastern & Western') || h3.textContent.includes('东西方')) {
+                    h3.textContent = translations[currentLang].culturePerspectiveTitle;
+                    
+                    // 查找并更新该h3后面的内容
+                    let nextElement = h3.nextElementSibling;
+                    if (nextElement && nextElement.tagName === 'P') {
+                        nextElement.textContent = translations[currentLang].easternPerspective;
+                        nextElement = nextElement.nextElementSibling;
+                    }
+                    
+                    if (nextElement && nextElement.tagName === 'P') {
+                        nextElement.textContent = translations[currentLang].westernComparison;
+                        nextElement = nextElement.nextElementSibling;
+                    }
+                    
+                    if (nextElement && nextElement.tagName === 'UL') {
+                        const listItems = nextElement.querySelectorAll('li');
+                        if (listItems.length >= 4) {
+                            listItems[0].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint1.split(',')[0]}</span>${translations[currentLang].westernPoint1.split(',')[1] || ''}`;
+                            listItems[1].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint2.split(',')[0]}</span>${translations[currentLang].westernPoint2.split(',')[1] || ''}`;
+                            listItems[2].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint3.split(',')[0]}</span>${translations[currentLang].westernPoint3.split(',')[1] || ''}`;
+                            listItems[3].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint4.split(',')[0]}</span>${translations[currentLang].westernPoint4.split(',')[1] || ''}`;
+                        }
+                        nextElement = nextElement.nextElementSibling;
+                    }
+                    
+                    if (nextElement && nextElement.tagName === 'P') {
+                        nextElement.textContent = translations[currentLang].culturalConclusion;
+                    }
+                }
+            }
+        }
         
         // 更新"How to Use"部分
         const howToUseSection = document.querySelector('section:nth-of-type(3)');
@@ -276,6 +341,10 @@ document.addEventListener('DOMContentLoaded', () => {
             meritCounter.classList.remove('dragging');
         }
     }
+
+    // 防止触摸事件和点击事件重复触发的变量
+    let touchEventFired = false;
+    let touchEventTimer = null;
 
     // 敲击木鱼函数
     function tapWoodenFish() {
@@ -435,6 +504,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 点击事件
     woodenFish.addEventListener('click', function(e) {
+        // 如果是由触摸事件引起的，则不执行
+        if (touchEventFired) {
+            return;
+        }
+
         e.preventDefault();
         
         // 添加波纹效果
@@ -462,7 +536,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // 触摸事件支持
-    woodenFish.addEventListener('touchstart', tapWoodenFish, { passive: false });
+    woodenFish.addEventListener('touchstart', function(e) {
+        // 设置标志，表示触摸事件已触发
+        touchEventFired = true;
+        
+        // 添加波纹效果 (为触摸设备添加与点击相同的视觉反馈)
+        const rect = woodenFish.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+        
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        ripple.style.left = `${touchX}px`;
+        ripple.style.top = `${touchY}px`;
+        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        
+        woodenFish.appendChild(ripple);
+        
+        // 动画完成后移除波纹元素
+        setTimeout(() => {
+            woodenFish.removeChild(ripple);
+        }, 800);
+        
+        // 清除之前的计时器
+        if (touchEventTimer) {
+            clearTimeout(touchEventTimer);
+        }
+        
+        // 调用敲击函数
+        tapWoodenFish();
+        
+        // 500毫秒后重置标志，这个时间应该足够click事件触发
+        touchEventTimer = setTimeout(() => {
+            touchEventFired = false;
+        }, 500);
+        
+    }, { passive: false });
     
     // 键盘空格事件
     document.addEventListener('keydown', (event) => {
