@@ -373,20 +373,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 暴击相关变量
+    // 优化连击判断参数
     let lastTapTime = 0;           // 上次点击时间
     let consecutiveTaps = 0;       // 连续快速点击次数
     let tapInterval = 800;         // 快速点击的时间间隔阈值(毫秒)
-    let tapThreshold = Math.floor(Math.random() * 13) + 8;  // 触发暴击所需的连续点击次数(随机8-20次)
+    let tapThreshold = Math.floor(Math.random() * 8) + 8;  // 降低触发暴击所需的连续点击次数
     let criticalCooldown = false;  // 暴击冷却状态
+    let lastCriticalHit = false;   // 记录上次是否为暴击
     
     // 事件处理全局状态管理 - 全新实现
     const tapState = {
         processing: false,           // 是否正在处理点击
         lastTimestamp: 0,            // 上次点击的时间戳
         touchId: null,               // 当前触摸ID
-        debounceTime: 300,           // 去抖动时间(毫秒)
-        lockTime: 500,               // 锁定时间(毫秒)
+        debounceTime: 150,           // 去抖动时间(毫秒) - 降低为150ms提高响应速度
+        lockTime: 200,               // 锁定时间(毫秒) - 降低为200ms增加点击响应
         audioPlaying: false,         // 音频是否正在播放
         audioError: false            // 音频是否发生错误
     };
@@ -394,64 +395,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // 安全的音频播放函数
     function safePlayAudio() {
         if (tapState.audioPlaying) {
-            console.log('音频已在播放中，跳过');
             return Promise.resolve();
         }
         
         if (tapState.audioError) {
-            console.log('音频系统错误，跳过');
             return Promise.reject(new Error('音频系统错误'));
         }
         
-        tapState.audioPlaying = true;
+        // 使用多个音频实例，避免单一实例被占用
+        let soundInstance = null;
         
+        // 使用音频池
+        if (!window.audioPool) {
+            window.audioPool = [];
+            for (let i = 0; i < 5; i++) {
+                const audio = new Audio('assets/wooden-fish-sound.mp3');
+                audio.preload = 'auto';
+                audio.volume = 0.8;
+                window.audioPool.push(audio);
+            }
+        }
+        
+        // 从池中获取可用音频
+        for (let i = 0; i < window.audioPool.length; i++) {
+            const audio = window.audioPool[i];
+            if (audio.paused || audio.ended) {
+                soundInstance = audio;
+                break;
+            }
+        }
+        
+        // 如果没有可用音频，创建新实例
+        if (!soundInstance) {
+            soundInstance = new Audio('assets/wooden-fish-sound.mp3');
+            soundInstance.volume = 0.8;
+        }
+        
+        // 播放音频，但不等待完成
         try {
-            // 重置音频状态
-            tapSound.pause();
-            tapSound.currentTime = 0;
-            
-            // 播放音频并处理完成事件
-            return tapSound.play()
-                .then(() => {
-                    // 音频播放成功，等待结束
-                    return new Promise((resolve) => {
-                        // 音频自然结束或提前停止时
-                        const handleEnded = () => {
-                            tapSound.removeEventListener('ended', handleEnded);
-                            tapState.audioPlaying = false;
-                            resolve();
-                        };
-                        
-                        tapSound.addEventListener('ended', handleEnded, { once: true });
-                        
-                        // 设置安全超时，确保状态最终会被重置
-                        setTimeout(() => {
-                            tapState.audioPlaying = false;
-                            tapSound.removeEventListener('ended', handleEnded);
-                            resolve();
-                        }, 1000); // 1秒后超时
-                    });
-                })
-                .catch(error => {
-                    console.error('音频播放错误:', error);
-                    tapState.audioPlaying = false;
-                    
-                    // 尝试重新加载音频
-                    return new Promise((resolve) => {
-                        tapSound = new Audio('assets/wooden-fish-sound.mp3');
-                        tapSound.addEventListener('canplaythrough', () => {
-                            resolve();
-                        }, { once: true });
-                        
-                        // 设置超时，防止长时间等待
-                        setTimeout(resolve, 2000);
-                    });
-                });
-        } catch (error) {
-            console.error('严重的音频系统错误:', error);
-            tapState.audioError = true;
-            tapState.audioPlaying = false;
-            return Promise.reject(error);
+            soundInstance.currentTime = 0;
+            return soundInstance.play().catch(() => Promise.resolve());
+        } catch (e) {
+            return Promise.resolve();
         }
     }
     
@@ -724,28 +709,39 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('设置移动设备触摸事件');
             
             // 清除可能存在的旧事件（通过元素替换已完成）
-            woodenFish.addEventListener('touchstart', function(e) {
+            const touchStartHandler = function(e) {
                 e.preventDefault();
-                e.stopPropagation();
                 
                 // 获取第一个触摸点
                 const touch = e.touches[0];
                 handleTap(touch.clientX, touch.clientY);
-            }, { passive: false });
+            };
+            
+            // 使用事件捕获提高响应速度，passive: false确保能调用preventDefault
+            woodenFish.addEventListener('touchstart', touchStartHandler, { 
+                passive: false, 
+                capture: true 
+            });
             
             // 防止默认行为干扰（如滚动、缩放）
+            const touchEndHandler = function(e) {
+                e.preventDefault();
+            };
+            
             ['touchend', 'touchcancel', 'touchmove'].forEach(eventType => {
-                woodenFish.addEventListener(eventType, function(e) {
-                    e.preventDefault();
-                }, { passive: false });
+                woodenFish.addEventListener(eventType, touchEndHandler, { 
+                    passive: false,
+                    capture: true
+                });
             });
         } else {
             console.log('设置桌面设备点击事件');
             
-            // 桌面设备设置点击事件
-            woodenFish.addEventListener('click', function(e) {
+            // 桌面设备设置点击事件 - 使用mousedown而不是click提高响应速度
+            woodenFish.addEventListener('mousedown', function(e) {
+                e.preventDefault();
                 handleTap(e.clientX, e.clientY);
-            });
+            }, { capture: true });
         }
         
         // 空格键敲击木鱼
@@ -782,10 +778,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 简化的点击处理函数
     function handleTap(clientX, clientY) {
-        // 防抖动 - 最小时间间隔 300ms
+        // 防抖动 - 降低最小时间间隔为150ms，提高连击响应速度
         const now = Date.now();
-        if (now - tapState.lastTimestamp < 300) {
-            console.log('点击间隔太短，忽略');
+        if (now - tapState.lastTimestamp < 150) {
             return false;
         }
         
@@ -814,8 +809,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isQuickTap) {
             consecutiveTaps++;
             
-            // 每次快速点击时都显示连击提示
-            if (consecutiveTaps > 1) {
+            // 只在需要时显示连击提示，节省性能
+            if (consecutiveTaps > 1 && (consecutiveTaps % 2 === 0 || consecutiveTaps >= tapThreshold - 2)) {
                 showComboHint(consecutiveTaps);
             }
         } else {
@@ -833,262 +828,209 @@ document.addEventListener('DOMContentLoaded', () => {
             lastCriticalHit = true; // 设置暴击标志
             
             // 重新设置随机目标连击数
-            tapThreshold = Math.floor(Math.random() * 13) + 8;
+            tapThreshold = Math.floor(Math.random() * 8) + 8;
             
             // 暴击后3秒冷却时间
             setTimeout(() => {
                 criticalCooldown = false;
             }, 3000);
             
-            // 添加游戏化元素 - 暴击提示和特效增强 - 适应暗色主题
-            const criticalMessage = document.createElement('div');
-            criticalMessage.className = 'fixed top-1/4 left-1/2 transform -translate-x-1/2 bg-amber-900 text-amber-100 px-8 py-4 rounded-xl shadow-2xl z-50 font-bold text-xl';
-            criticalMessage.textContent = currentLang === 'en' ? '✨ CRITICAL HIT! ✨' : '✨ 暴击！✨';
-            criticalMessage.style.opacity = '0';
-            criticalMessage.style.transition = 'opacity 0.3s, transform 0.5s';
-            criticalMessage.style.border = '2px solid #FF9D00';
-            criticalMessage.style.boxShadow = '0 0 20px rgba(255, 157, 0, 0.4)';
-            document.body.appendChild(criticalMessage);
-            
+            // 添加游戏化元素 - 暴击提示，微调位置更靠左侧
             setTimeout(() => {
-                criticalMessage.style.opacity = '1';
-                criticalMessage.style.transform = 'translate(-50%, -10px)';
-            }, 10);
-            
-            setTimeout(() => {
+                const fishRect = woodenFish.getBoundingClientRect();
+                const criticalMessage = document.createElement('div');
+                criticalMessage.className = 'fixed top-1/4 transform bg-amber-900 text-amber-100 px-8 py-4 rounded-xl shadow-2xl z-50 font-bold text-xl';
+                criticalMessage.textContent = currentLang === 'en' ? '✨ CRITICAL HIT! ✨' : '✨ 暴击！✨';
                 criticalMessage.style.opacity = '0';
-                criticalMessage.style.transform = 'translate(-50%, -30px)';
+                criticalMessage.style.transition = 'opacity 0.3s, transform 0.5s';
+                criticalMessage.style.border = '2px solid #FF9D00';
+                criticalMessage.style.boxShadow = '0 0 20px rgba(255, 157, 0, 0.4)';
+                criticalMessage.style.left = `${fishRect.left - 250}px`; // 从-150px调整到-250px，更远离木鱼
+                criticalMessage.style.pointerEvents = 'none'; // 确保不接收点击事件
+                document.body.appendChild(criticalMessage);
+                
                 setTimeout(() => {
-                    document.body.removeChild(criticalMessage);
-                }, 500);
-            }, 1500);
+                    criticalMessage.style.opacity = '1';
+                    criticalMessage.style.transform = 'translateY(-10px)';
+                }, 10);
+                
+                setTimeout(() => {
+                    criticalMessage.style.opacity = '0';
+                    criticalMessage.style.transform = 'translateY(-30px)';
+                    setTimeout(() => {
+                        if (criticalMessage.parentNode) {
+                            document.body.removeChild(criticalMessage);
+                        }
+                    }, 500);
+                }, 1500);
+            }, 0);
         }
         
         const meritIncrease = isCritical ? 5 : 1;
         
-        // 播放动画
+        // 播放动画 - 简化为直接添加移除类名
         woodenFish.classList.add('tapped');
         if (isCritical) {
             woodenFish.classList.add('critical');
-            setTimeout(() => {
-                woodenFish.classList.remove('critical');
-            }, 500);
+            setTimeout(() => woodenFish.classList.remove('critical'), 500);
         }
-        setTimeout(() => {
-            woodenFish.classList.remove('tapped');
-        }, 100);
+        setTimeout(() => woodenFish.classList.remove('tapped'), 100);
         
-        // 安全播放音频
-        safePlayAudio().catch(err => {
-            console.error('音频播放失败，继续执行功能流程', err);
-        });
+        // 播放音频 - 使用非阻塞方式
+        safePlayAudio().catch(() => {});
         
         // 增加功德 - 添加防御性检查
         meritCount += meritIncrease;
         
         // 检查计数器元素是否存在，如果不存在则重新获取
         if (!meritCountElement || meritCountElement.parentNode === null) {
-            console.log('重新获取功德计数器元素');
             meritCountElement = document.getElementById('merit-count');
         }
         
         if (meritCountElement) {
             meritCountElement.textContent = meritCount;
-            console.log('功德已增加:', meritCount);
+        }
+        
+        // 保存功德值到localStorage - 使用节流保存，提高性能
+        if (meritCount % 5 === 0) {
+            localStorage.setItem('woodenFishMerit', meritCount);
+        }
+        
+        // 使用requestAnimationFrame提高UI响应性能
+        requestAnimationFrame(() => {
+            // 更新进度条和等级
+            updateProgressAndLevel();
+            
+            // 检查成就
+            checkAchievements();
+            
+            // 显示功德弹出动画
+            showMeritAnimation(meritIncrease, isCritical);
+        });
+    }
+    
+    // 显示功德+1/+5动画
+    function showMeritAnimation(meritAmount, isCritical) {
+        // 创建功德弹出元素
+        const meritText = document.createElement('div');
+        
+        // 设置文本内容
+        if (userWish && userWish.trim() !== '') {
+            meritText.textContent = `${userWish.length > 12 ? userWish.substring(0, 12) + '...' : userWish} +${meritAmount}`;
         } else {
-            console.error('无法找到功德计数器元素');
+            meritText.textContent = `+${meritAmount}`;
         }
         
-        // 保存功德值到localStorage
-        localStorage.setItem('woodenFishMerit', meritCount);
+        // 获取木鱼位置
+        const rect = woodenFish.getBoundingClientRect();
         
-        // 更新进度条和等级
-        updateProgressAndLevel();
+        // 功德+1文本放在木鱼左侧80px的位置
+        const randomOffsetY = Math.random() * 20 - 10;
+        const xPosition = rect.left - 80; // 从-150px调整到-80px
         
-        // 检查成就
-        checkAchievements();
+        // 设置样式 - 使用最小必要的属性，减少重排重绘
+        Object.assign(meritText.style, {
+            position: 'fixed',
+            zIndex: '9999',
+            left: `${xPosition}px`,
+            top: `${rect.top + rect.height/2 + randomOffsetY}px`,
+            color: isCritical ? '#FFD700' : '#F59E0B',
+            fontWeight: 'bold',
+            fontSize: isCritical ? '2rem' : '1.5rem',
+            textShadow: isCritical ? '0 0 10px rgba(255, 215, 0, 0.7)' : '0 0 5px rgba(245, 158, 11, 0.5)',
+            padding: '5px 10px',
+            borderRadius: '15px',
+            backgroundColor: isCritical ? 'rgba(44, 27, 0, 0.8)' : 'rgba(30, 27, 17, 0.7)',
+            animation: 'float-up 1.5s ease-out forwards',
+            pointerEvents: 'none' // 确保不会接收点击事件
+        });
         
-        // 显示功德动画
-        showMeritAnimation(meritIncrease, isCritical, userWish);
+        // 添加到DOM
+        document.body.appendChild(meritText);
         
-        // 返回成功标志
-        return true;
-    }
-    
-    // 全新的功德动画显示函数 - 单独实现，便于维护和调试
-    function showMeritAnimation(meritIncrease, isCritical, wish) {
-        // 防止在动画创建过程中出现错误
-        try {
-            console.log('创建功德动画元素');
-            
-            // 1. 创建动画元素
-            const meritText = document.createElement('div');
-            
-            // 2. 设置文本内容 - 根据是否有心愿显示不同内容
-            if (wish && wish.trim() !== '') {
-                meritText.innerHTML = `<span class="wish-text">${wish}</span> <span class="merit-number">+${meritIncrease}</span>`;
-            } else {
-                meritText.innerHTML = `<span class="merit-number">+${meritIncrease}</span>`;
-            }
-            
-            // 3. 设置基本样式类
-            meritText.className = 'merit-popup-text';
-            if (isCritical) {
-                meritText.classList.add('critical-merit');
-            }
-            
-            // 4. 设置内联样式 - 确保动画可见，使用更适合暗色主题的颜色
-            meritText.style.position = 'fixed';
-            meritText.style.zIndex = '9999';
-            meritText.style.pointerEvents = 'none';
-            meritText.style.userSelect = 'none';
-            meritText.style.fontWeight = 'bold';
-            meritText.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
-            
-            // 设置颜色和大小 - 暴击时更大更明显，调整为暗色主题颜色
-            meritText.style.color = isCritical ? '#FFB700' : '#F59E0B';
-            meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
-            
-            // 添加背景，提高在暗色主题下的可见度
-            meritText.style.backgroundColor = isCritical ? 'rgba(30, 27, 17, 0.8)' : 'rgba(30, 27, 17, 0.6)';
-            meritText.style.padding = '5px 12px';
-            meritText.style.borderRadius = '12px';
-            meritText.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-            meritText.style.border = isCritical ? '1px solid rgba(255, 183, 0, 0.5)' : 'none';
-            
-            // 设置动画效果
-            meritText.style.transition = 'all 1.2s ease-out';
-            meritText.style.opacity = '0';
-            meritText.style.transform = 'translateY(0)';
-            
-            // 5. 计算位置 - 在木鱼上方随机位置
-            const rect = woodenFish.getBoundingClientRect();
-            const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
-            const y = rect.top + rect.height/3;  // 在木鱼上方1/3处
-            
-            meritText.style.left = `${x}px`;
-            meritText.style.top = `${y}px`;
-            
-            // 添加额外的样式，确保文本可读性
-            if (wish && wish.trim() !== '') {
-                meritText.style.maxWidth = '250px';
-                meritText.style.textAlign = 'center';
-                meritText.style.overflow = 'hidden';
-                meritText.style.textOverflow = 'ellipsis';
-                meritText.style.whiteSpace = 'nowrap';
-                
-                // 为心愿文本添加额外样式 - 使用暗色主题颜色
-                const wishSpan = meritText.querySelector('.wish-text');
-                if (wishSpan) {
-                    wishSpan.style.color = '#A5B4FC'; // 淡紫色调，适合暗色主题
-                    wishSpan.style.fontSize = '0.8em';
-                }
-                
-                // 为数字添加额外样式
-                const numberSpan = meritText.querySelector('.merit-number');
-                if (numberSpan) {
-                    numberSpan.style.fontWeight = 'bolder';
-                }
-            }
-            
-            // 6. 添加到DOM
-            document.body.appendChild(meritText);
-            
-            // 7. 触发动画
+        // 暴击时添加粒子效果 - 延迟创建，优先响应点击
+        if (isCritical) {
             setTimeout(() => {
-                meritText.style.opacity = '1';
-                meritText.style.transform = 'translateY(-60px)';
-            }, 10);
-            
-            // 8. 动画结束后移除元素
-            setTimeout(() => {
-                meritText.style.opacity = '0';
-                
-                // 确保元素被移除
-                setTimeout(() => {
-                    if (meritText.parentNode) {
-                        document.body.removeChild(meritText);
-                    }
-                }, 500);
-            }, 1200);
-            
-            // 9. 暴击时添加额外粒子效果 - 调整为暗色主题风格
-            if (isCritical) {
-                // 添加光晕效果
-                const glow = document.createElement('div');
-                glow.className = 'merit-glow';
-                glow.style.position = 'fixed';
-                glow.style.left = `${x - 50}px`;
-                glow.style.top = `${y - 30}px`;
-                glow.style.width = '120px';
-                glow.style.height = '120px';
-                glow.style.borderRadius = '50%';
-                glow.style.background = 'radial-gradient(circle, rgba(255,183,0,0.8) 0%, rgba(255,183,0,0) 70%)';
-                glow.style.zIndex = '9998';
-                glow.style.pointerEvents = 'none';
-                document.body.appendChild(glow);
-                
-                // 设置动画后移除光晕
-                setTimeout(() => {
-                    glow.style.opacity = '0';
-                    glow.style.transform = 'scale(1.5)';
-                    glow.style.transition = 'opacity 0.8s, transform 0.8s';
-                    
-                    setTimeout(() => {
-                        if (glow.parentNode) {
-                            document.body.removeChild(glow);
-                        }
-                    }, 800);
-                }, 200);
-                
-                // 添加粒子效果
-                for (let i = 0; i < 8; i++) {
-                    createParticle(x, y);
-                }
-            }
-        } catch (error) {
-            console.error('创建功德动画失败:', error);
+                addCriticalEffects(rect);
+            }, 0);
         }
-    }
-    
-    // 创建暴击粒子效果
-    function createParticle(x, y) {
-        const particle = document.createElement('div');
-        particle.style.position = 'fixed';
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-        particle.style.width = '8px';
-        particle.style.height = '8px';
-        particle.style.backgroundColor = `hsl(${Math.random() * 30 + 35}, 100%, 60%)`;
-        particle.style.borderRadius = '50%';
-        particle.style.zIndex = '9997';
-        particle.style.boxShadow = '0 0 6px rgba(255, 183, 0, 0.8)';
         
-        // 随机方向和距离
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * 60 + 40;
-        const destinationX = x + Math.cos(angle) * distance;
-        const destinationY = y + Math.sin(angle) * distance;
-        
-        // 设置动画
-        particle.style.transition = 'all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1)';
-        
-        document.body.appendChild(particle);
-        
-        // 触发动画
+        // 动画结束后移除元素
         setTimeout(() => {
-            particle.style.transform = `translate(${destinationX - x}px, ${destinationY - y}px)`;
-            particle.style.opacity = '0';
+            if (meritText.parentNode) {
+                document.body.removeChild(meritText);
+            }
+        }, 1500);
+    }
+    
+    // 暴击特效函数 - 特效保持在原位（右侧）
+    function addCriticalEffects(rect) {
+        // 创建光晕效果 - 保持在原位
+        const glow = document.createElement('div');
+        Object.assign(glow.style, {
+            position: 'fixed',
+            left: `${rect.left + rect.width/2 - 100}px`,
+            top: `${rect.top + rect.height/2 - 100}px`,
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, rgba(255,215,0,0) 70%)',
+            zIndex: '9998',
+            pointerEvents: 'none'
+        });
+        document.body.appendChild(glow);
+        
+        // 添加粒子效果 - 保持在原位
+        for (let i = 0; i < 8; i++) {
+            const particle = document.createElement('div');
             
-            // 移除粒子
+            // 计算粒子起始位置 - 保持在原位
+            const x = rect.left + rect.width/2;
+            const y = rect.top + rect.height/2;
+            const angle = (i / 8) * 2 * Math.PI;
+            const distance = 80;
+            
+            Object.assign(particle.style, {
+                position: 'fixed',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#FFD700',
+                borderRadius: '50%',
+                boxShadow: '0 0 8px #FFD700',
+                zIndex: '9997',
+                opacity: '1',
+                pointerEvents: 'none',
+                left: `${x}px`,
+                top: `${y}px`,
+                transition: 'transform 0.8s ease-out, opacity 0.8s ease-out'
+            });
+            
+            document.body.appendChild(particle);
+            
+            // 触发粒子飞出动画
+            requestAnimationFrame(() => {
+                const endX = x + Math.cos(angle) * distance;
+                const endY = y + Math.sin(angle) * distance;
+                particle.style.opacity = '0';
+                particle.style.transform = `translate(${endX - x}px, ${endY - y}px)`;
+            });
+            
+            // 动画结束后移除粒子
             setTimeout(() => {
                 if (particle.parentNode) {
                     document.body.removeChild(particle);
                 }
             }, 800);
-        }, 10);
+        }
+        
+        // 动画结束后移除光晕
+        setTimeout(() => {
+            if (glow.parentNode) {
+                document.body.removeChild(glow);
+            }
+        }, 800);
     }
-
+    
     // 显示连击提示
     function showComboHint(comboCount) {
         const comboHint = document.createElement('div');
@@ -1101,31 +1043,34 @@ document.addEventListener('DOMContentLoaded', () => {
         // 样式设置
         comboHint.style.position = 'fixed';
         
-        // 根据设备类型调整位置
+        // 将连击提示放在右侧，恢复原样
         if (isMobile) {
-            // 移动设备：放在木鱼下方
-            comboHint.style.left = `${fishRect.left + fishRect.width/2}px`;
-            comboHint.style.top = `${fishRect.bottom + 20}px`;
-            comboHint.style.transform = 'translateX(-50%)';
+            // 移动设备：放在木鱼右上方
+            comboHint.style.right = '15px';
+            comboHint.style.left = 'auto'; // 清除左侧位置
+            comboHint.style.top = `${fishRect.top - 10}px`;
+            comboHint.style.borderRadius = '15px';
+            comboHint.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            comboHint.style.border = '1px solid rgba(255, 255, 255, 0.2)';
         } else {
-            // 桌面设备：放在木鱼右侧靠近处
+            // 桌面设备：放在木鱼右侧
             comboHint.style.left = `${fishRect.right + 20}px`;
-            comboHint.style.top = `${fishRect.top + fishRect.height/2}px`;
+            comboHint.style.top = `${fishRect.top + fishRect.height/4}px`;
             comboHint.style.transform = 'translateY(-50%)';
         }
         
-        // 更改为暗色主题配色
-        comboHint.style.color = '#A5B4FC';
-        comboHint.style.fontSize = '1.25rem';
+        // 设置样式
+        comboHint.style.color = '#00BFFF';
+        comboHint.style.fontSize = '1rem';
         comboHint.style.fontWeight = 'bold';
-        comboHint.style.padding = '8px 16px';
+        comboHint.style.padding = '8px 12px';
         comboHint.style.borderRadius = '12px';
-        comboHint.style.backgroundColor = 'rgba(30, 30, 46, 0.85)';
+        comboHint.style.backgroundColor = 'rgba(30, 30, 46, 0.8)';
         comboHint.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.3)';
         comboHint.style.zIndex = '1000';
         comboHint.style.opacity = '0';
         comboHint.style.transition = 'opacity 0.3s';
-        comboHint.style.border = '1px solid rgba(165, 180, 252, 0.3)';
+        comboHint.style.pointerEvents = 'none'; // 确保不会接收点击事件
         
         // 根据进度改变颜色
         const progress = comboCount / tapThreshold;
@@ -1151,9 +1096,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 comboHint.style.opacity = '0';
                 setTimeout(() => {
-                    document.body.removeChild(comboHint);
+                    if (comboHint.parentNode) {
+                        document.body.removeChild(comboHint);
+                    }
                 }, 300);
-            }, 1000);
+            }, 2000);
         }, 10);
     }
 
@@ -1377,11 +1324,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 显示成就通知
     function showAchievementNotification(achievement) {
+        // 修改成就通知样式，移到左侧但不要太远
+        achievementNotification.style.right = 'auto';
+        achievementNotification.style.left = '50px'; // 更靠近中心位置
+        achievementNotification.style.transform = 'translateX(-100%)';
+        
         achievementText.textContent = achievement.name[currentLang];
         
         // 显示通知
         achievementNotification.style.opacity = '1';
         achievementNotification.style.transform = 'translateX(0)';
+        
+        // 确保不会接收点击事件
+        achievementNotification.style.pointerEvents = 'none';
         
         // 添加声音效果
         const achievementSound = new Audio('assets/achievement.mp3');
@@ -1391,7 +1346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3秒后隐藏
         setTimeout(() => {
             achievementNotification.style.opacity = '0';
-            achievementNotification.style.transform = 'translateX(100%)';
+            achievementNotification.style.transform = 'translateX(-100%)';
         }, 3000);
     }
     
