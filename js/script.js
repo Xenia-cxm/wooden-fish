@@ -172,51 +172,99 @@ document.addEventListener('DOMContentLoaded', () => {
         // 更新关于电子木鱼部分内容
         const aboutSection = document.querySelector('section:nth-of-type(2)');
         if (aboutSection) {
+            // 获取标题下面的段落
             const paragraphs = aboutSection.querySelectorAll('.prose p');
             if (paragraphs.length >= 2) {
                 paragraphs[0].textContent = translations[currentLang].aboutContent1;
                 paragraphs[1].textContent = translations[currentLang].aboutContent2;
+            } else {
+                // 如果没有找到预期的paragraphs，尝试其他选择器
+                const allParagraphs = aboutSection.querySelectorAll('p');
+                if (allParagraphs.length >= 2) {
+                    allParagraphs[0].textContent = translations[currentLang].aboutContent1;
+                    allParagraphs[1].textContent = translations[currentLang].aboutContent2;
+                }
             }
             
             // 更新东西方文化视角部分
             const h3Elements = aboutSection.querySelectorAll('h3');
-            for (const h3 of h3Elements) {
-                if (h3.textContent.includes('Eastern & Western') || h3.textContent.includes('东西方')) {
-                    h3.textContent = translations[currentLang].culturePerspectiveTitle;
-                    
-                    // 查找并更新该h3后面的内容
-                    let nextElement = h3.nextElementSibling;
-                    if (nextElement && nextElement.tagName === 'P') {
-                        nextElement.textContent = translations[currentLang].easternPerspective;
-                        nextElement = nextElement.nextElementSibling;
-                    }
-                    
-                    if (nextElement && nextElement.tagName === 'P') {
-                        nextElement.textContent = translations[currentLang].westernComparison;
-                        nextElement = nextElement.nextElementSibling;
-                    }
-                    
-                    if (nextElement && nextElement.tagName === 'UL') {
-                        const listItems = nextElement.querySelectorAll('li');
-                        if (listItems.length >= 4) {
-                            // 为了保持格式，使用innerHTML而不是textContent
-                            if (currentLang === 'en') {
-                                listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
-                                listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
-                                listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
-                                listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
-                            } else {
-                                listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
-                                listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
-                                listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
-                                listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
-                            }
+            if (h3Elements.length > 0) {
+                for (const h3 of h3Elements) {
+                    if (h3.textContent.includes('Eastern & Western') || h3.textContent.includes('东西方')) {
+                        h3.textContent = translations[currentLang].culturePerspectiveTitle;
+                        
+                        // 查找并更新该h3后面的内容
+                        let nextElement = h3.nextElementSibling;
+                        if (nextElement && nextElement.tagName === 'P') {
+                            nextElement.textContent = translations[currentLang].easternPerspective;
+                            nextElement = nextElement.nextElementSibling;
                         }
-                        nextElement = nextElement.nextElementSibling;
+                        
+                        if (nextElement && nextElement.tagName === 'P') {
+                            nextElement.textContent = translations[currentLang].westernComparison;
+                            nextElement = nextElement.nextElementSibling;
+                        }
+                        
+                        if (nextElement && nextElement.tagName === 'UL') {
+                            const listItems = nextElement.querySelectorAll('li');
+                            if (listItems.length >= 4) {
+                                // 为了保持格式，使用innerHTML而不是textContent
+                                if (currentLang === 'en') {
+                                    listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
+                                    listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
+                                    listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
+                                    listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
+                                } else {
+                                    listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
+                                    listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
+                                    listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
+                                    listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
+                                }
+                            }
+                            nextElement = nextElement.nextElementSibling;
+                        }
+                        
+                        if (nextElement && nextElement.tagName === 'P') {
+                            nextElement.textContent = translations[currentLang].culturalConclusion;
+                        }
+                    }
+                }
+            } else {
+                // 如果没有找到h3元素，尝试直接更新所有内容
+                const allContent = aboutSection.innerHTML;
+                if (allContent.includes('Eastern & Western') || allContent.includes('eastern perspective')) {
+                    // 深度扫描整个关于部分的段落
+                    const allAboutParagraphs = aboutSection.querySelectorAll('p');
+                    
+                    // 映射段落到翻译内容
+                    if (allAboutParagraphs.length >= 5) {
+                        allAboutParagraphs[0].textContent = translations[currentLang].aboutContent1;
+                        allAboutParagraphs[1].textContent = translations[currentLang].aboutContent2;
+                        allAboutParagraphs[2].textContent = translations[currentLang].easternPerspective;
+                        allAboutParagraphs[3].textContent = translations[currentLang].westernComparison;
+                        allAboutParagraphs[4].textContent = translations[currentLang].culturalConclusion;
                     }
                     
-                    if (nextElement && nextElement.tagName === 'P') {
-                        nextElement.textContent = translations[currentLang].culturalConclusion;
+                    // 查找并更新标题
+                    const cultureTitleEl = aboutSection.querySelector('h3, strong');
+                    if (cultureTitleEl) {
+                        cultureTitleEl.textContent = translations[currentLang].culturePerspectiveTitle;
+                    }
+                    
+                    // 查找并更新列表项
+                    const listItems = aboutSection.querySelectorAll('li');
+                    if (listItems.length >= 4) {
+                        if (currentLang === 'en') {
+                            listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
+                            listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
+                            listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
+                            listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
+                        } else {
+                            listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
+                            listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
+                            listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
+                            listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
+                        }
                     }
                 }
             }
