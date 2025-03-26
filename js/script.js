@@ -134,6 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
         wishDiyBtn.innerHTML = `<i class="fas fa-heart"></i> ${translations[currentLang].customizeWish}`;
         shareBtn.innerHTML = `<i class="fas fa-share-alt"></i> ${translations[currentLang].share}`;
         
+        // 更新对话框元素（如果对话框已经打开）
+        const wishDialogTitle = document.querySelector('.wish-dialog-title');
+        const wishInput = document.getElementById('wish-input');
+        if (wishDialogTitle) {
+            wishDialogTitle.textContent = translations[currentLang].promptWish;
+        }
+        if (wishInput) {
+            wishInput.placeholder = currentLang === 'en' ? "Type your wish here..." : "在这里输入您的心愿...";
+        }
+        
         // 更新各部分标题
         document.querySelectorAll('h2').forEach(h2 => {
             if (h2.textContent.includes('Tap for Merit') || h2.textContent.includes('Tap for 功德')) {
@@ -598,21 +608,82 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 心愿DIY
     wishDiyBtn.addEventListener('click', () => {
-        const wish = prompt(translations[currentLang].promptWish, userWish);
-        if (wish !== null) {  // User didn't cancel
+        // 获取对话框元素
+        const wishDialog = document.getElementById('wish-dialog');
+        const wishInput = document.getElementById('wish-input');
+        const wishCancel = document.getElementById('wish-cancel');
+        const wishConfirm = document.getElementById('wish-confirm');
+        const dialogTitle = document.querySelector('.wish-dialog-title');
+        
+        // 设置对话框标题和初始值
+        dialogTitle.textContent = translations[currentLang].promptWish;
+        wishInput.value = userWish;
+        wishInput.placeholder = currentLang === 'en' ? "Type your wish here..." : "在这里输入您的心愿...";
+        
+        // 显示对话框
+        wishDialog.classList.remove('hidden');
+        wishInput.focus();
+        
+        // 取消按钮事件
+        wishCancel.onclick = () => {
+            wishDialog.classList.add('hidden');
+        };
+        
+        // 确认按钮事件
+        wishConfirm.onclick = () => {
+            const wish = wishInput.value.trim();
             userWish = wish;
             localStorage.setItem('woodenFishWish', userWish);
             
             if (userWish) {
-                alert(`${translations[currentLang].wishSet}${userWish}\n${translations[currentLang].meritTowardsWish}`);
-                // Update wish display
+                // 创建一个提示框而不是使用alert
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-indigo-100 text-indigo-800 px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.textContent = `${translations[currentLang].wishSet}${userWish}`;
+                document.body.appendChild(toast);
+                
+                // 3秒后自动消失
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.5s';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 500);
+                }, 3000);
+                
+                // 更新心愿显示
                 updateWishDisplay();
             } else {
-                alert(translations[currentLang].wishCleared);
-                // Remove wish display
+                // 创建一个提示框
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-indigo-100 text-indigo-800 px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.textContent = translations[currentLang].wishCleared;
+                document.body.appendChild(toast);
+                
+                // 3秒后自动消失
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.5s';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 500);
+                }, 3000);
+                
+                // 更新心愿显示
                 updateWishDisplay();
             }
-        }
+            
+            // 隐藏对话框
+            wishDialog.classList.add('hidden');
+        };
+        
+        // 按下Enter键确认
+        wishInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                wishConfirm.click();
+            }
+        };
     });
     
     // 分享功能
