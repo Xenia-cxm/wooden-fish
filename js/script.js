@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 获取DOM元素
+    // 获取DOM元素 - 一次性获取所有重要元素引用
     const woodenFishContainer = document.getElementById('wooden-fish').parentElement;
     let woodenFish = document.getElementById('wooden-fish');
-    const meritCountElement = document.getElementById('merit-count');
+    let meritCountElement = document.getElementById('merit-count');
     const meritPopup = document.getElementById('merit-popup');
     const meritCounter = document.getElementById('merit-counter');
-    const wishDiyBtn = document.getElementById('wish-diy');
-    const shareBtn = document.getElementById('share-btn');
+    let wishDiyBtn = document.getElementById('wish-diy');
+    let shareBtn = document.getElementById('share-btn');
     const shareCountElement = document.querySelector('.share-count');
     const languageToggle = document.getElementById('language-toggle');
     const progressBar = document.getElementById('progress-bar');
@@ -37,109 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 当前等级
     let currentLevel = levels[0];
     
-    // 更新等级和进度条
-    function updateProgressAndLevel() {
-        // 找到当前等级
-        let nextLevelIndex = 1;
-        for (let i = levels.length - 1; i >= 0; i--) {
-            if (meritCount >= levels[i].threshold) {
-                currentLevel = levels[i];
-                nextLevelIndex = Math.min(i + 1, levels.length - 1);
-                break;
-            }
-        }
-        
-        // 计算到下一级的进度
-        const nextLevel = levels[nextLevelIndex];
-        const progressToNextLevel = nextLevel.threshold - currentLevel.threshold;
-        const currentProgress = meritCount - currentLevel.threshold;
-        const progressPercentage = Math.min(100, Math.max(0, (currentProgress / progressToNextLevel) * 100));
-        
-        // 更新进度条
-        progressBar.style.width = `${progressPercentage}%`;
-        
-        // 更新等级提示
-        const levelTooltip = document.createElement('div');
-        levelTooltip.className = 'absolute -top-8 left-0 text-xs text-indigo-600 whitespace-nowrap';
-        levelTooltip.textContent = `${currentLevel.name[currentLang]} Lv.${currentLevel.level} (${meritCount}/${nextLevel.threshold})`;
-        
-        // 移除旧的提示
-        const oldTooltip = progressBar.parentElement.querySelector('.absolute');
-        if (oldTooltip) {
-            progressBar.parentElement.removeChild(oldTooltip);
-        }
-        
-        progressBar.parentElement.appendChild(levelTooltip);
-    }
-    
-    // 检查成就
-    function checkAchievements() {
-        let newAchievements = false;
-        
-        for (const achievement of achievements) {
-            if (achievement.achieved) continue;
-            
-            let achieved = false;
-            
-            if (achievement.special === 'critical' && lastCriticalHit) {
-                achieved = true;
-                lastCriticalHit = false; // 重置标志
-            } else if (achievement.special === 'wish' && userWish && !achievement.achieved) {
-                achieved = true;
-            } else if (meritCount >= achievement.threshold) {
-                achieved = true;
-            }
-            
-            if (achieved) {
-                achievement.achieved = true;
-                showAchievementNotification(achievement);
-                newAchievements = true;
-            }
-        }
-        
-        return newAchievements;
-    }
-    
-    // 显示成就通知
-    function showAchievementNotification(achievement) {
-        achievementText.textContent = achievement.name[currentLang];
-        
-        // 显示通知
-        achievementNotification.style.opacity = '1';
-        achievementNotification.style.transform = 'translateX(0)';
-        
-        // 添加声音效果
-        const achievementSound = new Audio('assets/achievement.mp3');
-        achievementSound.volume = 0.5;
-        achievementSound.play().catch(e => console.log('成就音效播放失败:', e));
-        
-        // 3秒后隐藏
-        setTimeout(() => {
-            achievementNotification.style.opacity = '0';
-            achievementNotification.style.transform = 'translateX(100%)';
-        }, 3000);
-    }
-    
-    // 暴击标志
-    let lastCriticalHit = false;
-
-    // 首先完全删除木鱼元素并重建一个全新的
-    const newWoodenFish = document.createElement('div');
-    newWoodenFish.id = 'wooden-fish';
-    newWoodenFish.className = 'wooden-fish hover:scale-105 transition-transform duration-300 cursor-pointer mb-6 relative group';
-    newWoodenFish.innerHTML = `
-        <div class="absolute inset-0 bg-amber-300 rounded-full opacity-0 group-hover:opacity-20 group-active:opacity-40 transition-opacity duration-300 transform scale-110"></div>
-        <img src="assets/wooden-fish.png" alt="Wooden Fish" class="w-48 md:w-64 mx-auto drop-shadow-lg">
-    `;
-    woodenFish.replaceWith(newWoodenFish);
-    woodenFish = newWoodenFish; // 更新引用
-
-    // 音效 - 创建新的音频上下文和缓冲区
-    let tapSound = new Audio('assets/wooden-fish-sound.mp3');
-    tapSound.preload = 'auto';
-    
-    // 功德计数器 - 每次刷新页面时重置为0
-    let meritCount = 0;
+    // 功德计数器 - 从localStorage中获取，如果不存在则为0
+    let meritCount = localStorage.getItem('woodenFishMerit') ? parseInt(localStorage.getItem('woodenFishMerit')) : 0;
     // 保持分享计数
     let shareCount = localStorage.getItem('shareCount') ? parseInt(localStorage.getItem('shareCount')) : 0;
     
@@ -147,9 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let userWish = localStorage.getItem('woodenFishWish') || '';
     
     // 初始化显示
-    meritCountElement.textContent = meritCount;
-    shareCountElement.textContent = shareCount;
-
+    if (meritCountElement) {
+        meritCountElement.textContent = meritCount;
+    }
+    
+    if (shareCountElement) {
+        shareCountElement.textContent = shareCount;
+    }
+    
+    // 音效 - 创建新的音频上下文和缓冲区
+    let tapSound = new Audio('assets/wooden-fish-sound.mp3');
+    tapSound.preload = 'auto';
+    
     // 检测设备类型 - 更精确的移动设备检测
     const isMobile = (() => {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -318,9 +226,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // 更新功德标签
         document.querySelector('.merit-label').textContent = translations[currentLang].merit;
         
-        // 更新按钮文本
-        wishDiyBtn.innerHTML = `<i class="fas fa-heart"></i> ${translations[currentLang].customizeWish}`;
-        shareBtn.innerHTML = `<i class="fas fa-share-alt"></i> ${translations[currentLang].share}`;
+        // 更新按钮文本 - 确保总是找到按钮并更新
+        const wishButton = document.getElementById('wish-diy');
+        if (wishButton) {
+            wishButton.innerHTML = `<i class="fas fa-heart"></i> ${translations[currentLang].customizeWish}`;
+            console.log('已更新许愿按钮文本:', translations[currentLang].customizeWish);
+        } else {
+            console.warn('找不到许愿按钮元素');
+        }
+        
+        const shareButton = document.getElementById('share-btn');
+        if (shareButton) {
+            shareButton.innerHTML = `<i class="fas fa-share-alt"></i> ${translations[currentLang].share}`;
+        }
         
         // 更新对话框元素（如果对话框已经打开）
         const wishDialogTitle = document.querySelector('.wish-dialog-title');
@@ -440,15 +358,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 语言切换事件
-    languageToggle.addEventListener('click', () => {
-        currentLang = currentLang === 'en' ? 'zh' : 'en';
-        localStorage.setItem('woodenFishLang', currentLang);
-        applyTranslations();
-    });
+    function setupLanguageToggle() {
+        if (!languageToggle) return;
+        
+        // 清除旧事件并设置新事件
+        const newLangToggle = languageToggle.cloneNode(true);
+        languageToggle.parentNode.replaceChild(newLangToggle, languageToggle);
+        
+        // 设置切换事件
+        newLangToggle.addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            localStorage.setItem('woodenFishLang', currentLang);
+            applyTranslations();
+        });
+    }
     
-    // 初始化语言
-    applyTranslations();
-
     // 暴击相关变量
     let lastTapTime = 0;           // 上次点击时间
     let consecutiveTaps = 0;       // 连续快速点击次数
@@ -595,151 +519,195 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 800);
     }
 
-    // 统一的点击处理函数 - 完全重写
-    function handleTap(clientX, clientY) {
-        // 获取当前时间戳
-        const now = Date.now();
+    // 核心函数：初始化木鱼界面
+    function initializeWoodenFish() {
+        console.log('初始化木鱼界面');
         
-        // 防抖动检查 - 如果两次点击间隔太短，忽略这次点击
-        if (now - tapState.lastTimestamp < tapState.debounceTime) {
-            console.log(`防抖: 忽略过快的点击 (${now - tapState.lastTimestamp}ms < ${tapState.debounceTime}ms)`);
-            return false;
+        // 添加必要的CSS样式，确保功德动画显示正常
+        addCustomStyles();
+        
+        // 只在初始化时替换一次木鱼元素
+        if (!document.getElementById('wooden-fish')) {
+            console.error('找不到木鱼元素，创建新元素');
+            
+            const newElement = document.createElement('div');
+            newElement.id = 'wooden-fish';
+            newElement.className = 'wooden-fish hover:scale-105 transition-transform duration-300 cursor-pointer mb-6 relative group';
+            newElement.innerHTML = `
+                <div class="absolute inset-0 bg-amber-300 rounded-full opacity-0 group-hover:opacity-20 group-active:opacity-40 transition-opacity duration-300 transform scale-110"></div>
+                <img src="assets/wooden-fish.png" alt="Wooden Fish" class="w-48 md:w-64 mx-auto drop-shadow-lg">
+            `;
+            
+            // 如果找到容器，添加到容器中
+            if (woodenFishContainer) {
+                woodenFishContainer.appendChild(newElement);
+            } else {
+                // 否则添加到页面主体
+                document.body.appendChild(newElement);
+            }
+            
+            // 更新引用
+            woodenFish = newElement;
         }
         
-        // 状态锁检查 - 如果当前正在处理点击，忽略这次点击
-        if (tapState.processing) {
-            console.log('状态锁: 当前正在处理点击，忽略');
-            return false;
+        // 重新获取功德计数元素（如果已丢失）
+        if (!meritCountElement || !meritCountElement.parentNode) {
+            meritCountElement = document.getElementById('merit-count');
+            if (meritCountElement) {
+                meritCountElement.textContent = meritCount;
+            }
         }
         
-        // 更新状态
-        tapState.lastTimestamp = now;
-        tapState.processing = true;
+        // 重新获取按钮元素（如果已丢失）
+        if (!wishDiyBtn || !wishDiyBtn.parentNode) {
+            wishDiyBtn = document.getElementById('wish-diy');
+        }
         
-        // 创建视觉效果
-        createRippleEffect(clientX, clientY);
+        if (!shareBtn || !shareBtn.parentNode) {
+            shareBtn = document.getElementById('share-btn');
+        }
         
-        // 执行木鱼敲击逻辑
-        tapWoodenFish();
+        // 设置事件监听器 - 不再重新创建元素
+        setupEventListeners(false);
         
-        // 设置状态锁定时间
-        setTimeout(() => {
-            console.log('状态锁: 重置处理状态');
-            tapState.processing = false;
-        }, tapState.lockTime);
+        // 初始化UI
+        updateProgressAndLevel();
+        updateWishDisplay();
         
-        return true;
+        console.log('木鱼界面初始化完成');
     }
     
-    // 鼠标和触摸事件设置 - 使用事件委托
-    function setupEventListeners() {
-        console.log('设置事件监听器 - 清除旧监听器');
+    // 添加必要的CSS样式到页面头部
+    function addCustomStyles() {
+        // 检查是否已添加样式
+        if (document.getElementById('wooden-fish-custom-styles')) {
+            return;
+        }
         
-        // 清除所有可能的事件监听 (通过克隆和替换)
-        const wrapper = document.createElement('div');
-        wrapper.className = woodenFishContainer.className;
-        wrapper.innerHTML = woodenFishContainer.innerHTML;
-        woodenFishContainer.parentNode.replaceChild(wrapper, woodenFishContainer);
+        // 创建样式元素
+        const styleEl = document.createElement('style');
+        styleEl.id = 'wooden-fish-custom-styles';
         
-        // 重新获取引用
-        woodenFish = document.getElementById('wooden-fish');
+        // 添加功德动画相关样式
+        styleEl.textContent = `
+            /* 功德动画弹出样式 */
+            .merit-popup-text {
+                display: block;
+                transform-origin: center bottom;
+                will-change: transform, opacity;
+                text-align: center;
+                white-space: nowrap;
+                transform: translateY(-20px);
+                animation: floatUp 1.5s ease-out forwards;
+            }
+            
+            /* 暴击样式 */
+            .critical-merit {
+                animation: criticalPulse 1.5s ease-out forwards;
+                transform: scale(1.2) translateY(-20px);
+            }
+            
+            /* 上浮动画 */
+            @keyframes floatUp {
+                0% { transform: translateY(0); opacity: 0; }
+                10% { opacity: 1; }
+                70% { opacity: 1; }
+                100% { transform: translateY(-80px); opacity: 0; }
+            }
+            
+            /* 暴击脉冲动画 */
+            @keyframes criticalPulse {
+                0% { transform: scale(1) translateY(0); opacity: 0; }
+                10% { transform: scale(1.2) translateY(-10px); opacity: 1; }
+                20% { transform: scale(1.1) translateY(-20px); }
+                70% { opacity: 1; }
+                100% { transform: scale(1) translateY(-100px); opacity: 0; }
+            }
+            
+            /* 光晕放大动画 */
+            .merit-glow {
+                transition: opacity 0.8s, transform 0.8s;
+                opacity: 1;
+                transform: scale(1);
+            }
+            
+            /* 确保木鱼点击动画 */
+            .wooden-fish.tapped {
+                transform: scale(0.95);
+                transition: transform 0.1s ease-out;
+            }
+            
+            /* 连击提示样式 */
+            .combo-hint {
+                animation: fadeInOut 1.3s ease-out forwards;
+            }
+            
+            @keyframes fadeInOut {
+                0% { opacity: 0; }
+                20% { opacity: 1; }
+                80% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
         
-        // 为移动设备添加事件处理
+        // 添加到文档头部
+        document.head.appendChild(styleEl);
+        console.log('已添加自定义CSS样式');
+    }
+    
+    // 优化的事件监听设置
+    function setupEventListeners(shouldReplaceElement = false) {
+        console.log('设置事件监听器');
+        
+        // 如果指定了替换元素，且元素存在
+        if (shouldReplaceElement && woodenFish && woodenFish.parentNode) {
+            console.log('替换木鱼元素');
+            
+            // 获取当前引用的副本
+            const oldElement = woodenFish;
+            
+            // 创建新元素并保留所有属性和内容
+            const newElement = oldElement.cloneNode(true);
+            
+            // 替换元素
+            oldElement.parentNode.replaceChild(newElement, oldElement);
+            
+            // 更新引用
+            woodenFish = newElement;
+        }
+        
+        // 为移动设备设置触摸事件
         if (isMobile) {
             console.log('设置移动设备触摸事件');
             
-            // 触摸开始事件 - 使用捕获阶段
+            // 清除可能存在的旧事件（通过元素替换已完成）
             woodenFish.addEventListener('touchstart', function(e) {
-                console.log('触摸开始事件触发');
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // 如果已经有触摸ID，忽略这次触摸
-                if (tapState.touchId !== null) {
-                    console.log('已有触摸ID，忽略');
-                    return false;
-                }
-                
-                // 只处理第一个触摸点
+                // 获取第一个触摸点
                 const touch = e.touches[0];
-                tapState.touchId = touch.identifier;
-                
-                // 调用通用处理函数
-                const result = handleTap(touch.clientX, touch.clientY);
-                console.log(`触摸处理结果: ${result ? '成功' : '被忽略'}`);
-                
-                return false;
-            }, { capture: true, passive: false });
+                handleTap(touch.clientX, touch.clientY);
+            }, { passive: false });
             
-            // 触摸结束事件 - 用于重置触摸ID
-            woodenFish.addEventListener('touchend', function(e) {
-                console.log('触摸结束事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // 验证触摸ID是否匹配
-                if (e.changedTouches.length > 0) {
-                    for (let i = 0; i < e.changedTouches.length; i++) {
-                        if (e.changedTouches[i].identifier === tapState.touchId) {
-                            console.log('触摸ID匹配，重置');
-                            tapState.touchId = null;
-                            break;
-                        }
-                    }
-                } else {
-                    // 始终重置，以防万一
-                    tapState.touchId = null;
-                }
-                
-                return false;
-            }, { capture: true, passive: false });
-            
-            // 取消触摸
-            woodenFish.addEventListener('touchcancel', function(e) {
-                console.log('触摸取消事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                tapState.touchId = null;
-                return false;
-            }, { capture: true, passive: false });
-            
-            // 阻止触摸移动
-            woodenFish.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, { capture: true, passive: false });
-            
-            // 阻止所有鼠标事件
-            ['mousedown', 'mouseup', 'mousemove', 'click'].forEach(eventType => {
+            // 防止默认行为干扰（如滚动、缩放）
+            ['touchend', 'touchcancel', 'touchmove'].forEach(eventType => {
                 woodenFish.addEventListener(eventType, function(e) {
-                    console.log(`阻止鼠标事件: ${eventType}`);
                     e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }, { capture: true, passive: false });
+                }, { passive: false });
             });
         } else {
             console.log('设置桌面设备点击事件');
             
-            // 桌面设备 - 只使用点击事件
+            // 桌面设备设置点击事件
             woodenFish.addEventListener('click', function(e) {
-                console.log('点击事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // 调用通用处理函数
                 handleTap(e.clientX, e.clientY);
-                
-                return false;
-            }, { capture: false });
+            });
         }
         
-        // 空格键事件监听
-        document.addEventListener('keydown', function(e) {
+        // 空格键敲击木鱼
+        const spaceHandler = function(e) {
             if (e.code === 'Space' || e.key === ' ') {
-                console.log('空格键事件触发');
                 e.preventDefault();
                 
                 // 获取木鱼中心坐标
@@ -747,20 +715,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 
-                // 调用通用处理函数
+                // 调用点击处理函数
                 handleTap(centerX, centerY);
             }
-        });
+        };
+        
+        // 移除旧的空格键事件（如果存在）
+        document.removeEventListener('keydown', spaceHandler);
+        // 添加新的空格键事件
+        document.addEventListener('keydown', spaceHandler);
+        
+        // 设置许愿按钮事件
+        setupWishEvents();
+        
+        // 设置分享按钮事件
+        setupShareEvents();
+        
+        // 设置语言切换事件
+        setupLanguageToggle();
         
         console.log('事件监听器设置完成');
-        
-        // 确保在DOM更新后重新应用翻译
-        applyTranslations();
     }
     
-    // 设置事件监听器
-    setupEventListeners();
-
+    // 简化的点击处理函数
+    function handleTap(clientX, clientY) {
+        // 防抖动 - 最小时间间隔 300ms
+        const now = Date.now();
+        if (now - tapState.lastTimestamp < 300) {
+            console.log('点击间隔太短，忽略');
+            return false;
+        }
+        
+        // 更新时间戳
+        tapState.lastTimestamp = now;
+        
+        // 创建视觉效果
+        createRippleEffect(clientX, clientY);
+        
+        // 执行木鱼敲击逻辑
+        tapWoodenFish();
+        
+        return true;
+    }
+    
     // 木鱼敲击核心函数
     function tapWoodenFish() {
         // 获取当前时间用于连击判断
@@ -841,9 +838,24 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('音频播放失败，继续执行功能流程', err);
         });
         
-        // 增加功德
+        // 增加功德 - 添加防御性检查
         meritCount += meritIncrease;
-        meritCountElement.textContent = meritCount;
+        
+        // 检查计数器元素是否存在，如果不存在则重新获取
+        if (!meritCountElement || meritCountElement.parentNode === null) {
+            console.log('重新获取功德计数器元素');
+            meritCountElement = document.getElementById('merit-count');
+        }
+        
+        if (meritCountElement) {
+            meritCountElement.textContent = meritCount;
+            console.log('功德已增加:', meritCount);
+        } else {
+            console.error('无法找到功德计数器元素');
+        }
+        
+        // 保存功德值到localStorage
+        localStorage.setItem('woodenFishMerit', meritCount);
         
         // 更新进度条和等级
         updateProgressAndLevel();
@@ -851,94 +863,132 @@ document.addEventListener('DOMContentLoaded', () => {
         // 检查成就
         checkAchievements();
         
-        // 显示功德弹出动画
-        const meritText = document.createElement('div');
-        // 根据是否有心愿显示不同的文本
-        if (userWish) {
-            meritText.textContent = `${userWish} +${meritIncrease}`;
-            meritText.style.maxWidth = '200px';
-            meritText.style.overflow = 'hidden';
-            meritText.style.textOverflow = 'ellipsis';
-            meritText.style.whiteSpace = 'nowrap';
-        } else {
-            meritText.textContent = `+${meritIncrease}`;
-        }
-        meritText.classList.add('merit-animation');
-        
-        // 暴击时添加特殊样式
-        if (isCritical) {
-            meritText.classList.add('critical-hit');
-        }
-        
-        // 随机位置 - 在木鱼上方
-        const rect = woodenFish.getBoundingClientRect();
-        const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
-        const y = rect.top + rect.height/2;
-        
-        meritText.style.position = 'fixed';
-        meritText.style.left = `${x}px`;
-        meritText.style.top = `${y}px`;
-        meritText.style.zIndex = '1000';
-        meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
-        meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
-        meritText.style.fontWeight = 'bold';
-        meritText.style.pointerEvents = 'none';
-        
-        document.body.appendChild(meritText);
-        
-        // 暴击时添加额外的视觉效果
-        if (isCritical) {
-            // 添加光晕效果
-            const glow = document.createElement('div');
-            glow.className = 'critical-glow';
-            glow.style.position = 'fixed';
-            glow.style.left = `${rect.left + rect.width/2 - 100}px`;
-            glow.style.top = `${rect.top + rect.height/2 - 100}px`;
-            glow.style.width = '200px';
-            glow.style.height = '200px';
-            glow.style.borderRadius = '50%';
-            glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.5) 0%, rgba(255,107,0,0) 70%)';
-            glow.style.zIndex = '10';
-            glow.style.pointerEvents = 'none';
-            document.body.appendChild(glow);
+        // 显示功德弹出动画 - 全新实现
+        showMeritAnimation(meritIncrease, isCritical, userWish);
+    }
+    
+    // 全新的功德动画显示函数 - 单独实现，便于维护和调试
+    function showMeritAnimation(meritIncrease, isCritical, wish) {
+        // 防止在动画创建过程中出现错误
+        try {
+            console.log('创建功德动画元素');
             
-            // 创建粒子效果
-            for (let i = 0; i < 12; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'critical-particle';
-                particle.style.position = 'fixed';
-                particle.style.left = `${rect.left + rect.width/2}px`;
-                particle.style.top = `${rect.top + rect.height/2}px`;
-                particle.style.width = '10px';
-                particle.style.height = '10px';
-                particle.style.borderRadius = '50%';
-                particle.style.backgroundColor = '#FF6B00';
-                particle.style.zIndex = '10';
-                particle.style.pointerEvents = 'none';
-                
-                // 使用style设置动画变量
-                const rotation = i * 30;
-                particle.style.setProperty('--rotate', `${rotation}deg`);
-                particle.style.opacity = '0';
-                particle.style.animation = 'particle-burst 0.8s ease-out forwards';
-                document.body.appendChild(particle);
-                
-                // 移除粒子
-                setTimeout(() => {
-                    document.body.removeChild(particle);
-                }, 800);
+            // 1. 创建动画元素
+            const meritText = document.createElement('div');
+            
+            // 2. 设置文本内容 - 根据是否有心愿显示不同内容
+            if (wish && wish.trim() !== '') {
+                meritText.innerHTML = `<span class="wish-text">${wish}</span> <span class="merit-number">+${meritIncrease}</span>`;
+            } else {
+                meritText.innerHTML = `<span class="merit-number">+${meritIncrease}</span>`;
             }
             
-            // 移除光晕
+            // 3. 设置基本样式类
+            meritText.className = 'merit-popup-text';
+            if (isCritical) {
+                meritText.classList.add('critical-merit');
+            }
+            
+            // 4. 设置内联样式 - 确保动画可见
+            meritText.style.position = 'fixed';
+            meritText.style.zIndex = '9999';
+            meritText.style.pointerEvents = 'none';
+            meritText.style.userSelect = 'none';
+            meritText.style.fontWeight = 'bold';
+            meritText.style.textShadow = '0 1px 2px rgba(0,0,0,0.1)';
+            
+            // 设置颜色和大小 - 暴击时更大更明显
+            meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
+            meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
+            
+            // 设置动画效果
+            meritText.style.transition = 'opacity 1.5s, transform 1.5s';
+            meritText.style.opacity = '0';
+            meritText.style.transform = 'translateY(0)';
+            
+            // 5. 计算位置 - 在木鱼上方随机位置
+            const rect = woodenFish.getBoundingClientRect();
+            const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
+            const y = rect.top + rect.height/3;  // 在木鱼上方1/3处
+            
+            meritText.style.left = `${x}px`;
+            meritText.style.top = `${y}px`;
+            
+            // 添加额外的样式，确保文本可读性
+            if (wish && wish.trim() !== '') {
+                meritText.style.maxWidth = '250px';
+                meritText.style.textAlign = 'center';
+                meritText.style.overflow = 'hidden';
+                meritText.style.textOverflow = 'ellipsis';
+                meritText.style.whiteSpace = 'nowrap';
+                
+                // 为心愿文本添加额外样式
+                const wishSpan = meritText.querySelector('.wish-text');
+                if (wishSpan) {
+                    wishSpan.style.color = '#4F46E5';
+                    wishSpan.style.fontSize = '0.8em';
+                }
+                
+                // 为数字添加额外样式
+                const numberSpan = meritText.querySelector('.merit-number');
+                if (numberSpan) {
+                    numberSpan.style.fontWeight = 'bolder';
+                }
+            }
+            
+            // 6. 添加到DOM
+            document.body.appendChild(meritText);
+            
+            // 7. 触发动画
             setTimeout(() => {
-                document.body.removeChild(glow);
-            }, 800);
+                meritText.style.opacity = '1';
+                meritText.style.transform = 'translateY(-50px)';
+            }, 10);
+            
+            // 8. 动画结束后移除元素
+            setTimeout(() => {
+                meritText.style.opacity = '0';
+                
+                // 确保元素被移除
+                setTimeout(() => {
+                    if (meritText.parentNode) {
+                        document.body.removeChild(meritText);
+                    }
+                }, 500);
+            }, 1200);
+            
+            // 9. 暴击时添加额外粒子效果
+            if (isCritical) {
+                // 添加光晕效果
+                const glow = document.createElement('div');
+                glow.className = 'merit-glow';
+                glow.style.position = 'fixed';
+                glow.style.left = `${x - 50}px`;
+                glow.style.top = `${y - 30}px`;
+                glow.style.width = '100px';
+                glow.style.height = '100px';
+                glow.style.borderRadius = '50%';
+                glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.6) 0%, rgba(255,107,0,0) 70%)';
+                glow.style.zIndex = '9998';
+                glow.style.pointerEvents = 'none';
+                document.body.appendChild(glow);
+                
+                // 设置动画后移除光晕
+                setTimeout(() => {
+                    glow.style.opacity = '0';
+                    glow.style.transform = 'scale(1.5)';
+                    glow.style.transition = 'opacity 0.8s, transform 0.8s';
+                    
+                    setTimeout(() => {
+                        if (glow.parentNode) {
+                            document.body.removeChild(glow);
+                        }
+                    }, 800);
+                }, 200);
+            }
+        } catch (error) {
+            console.error('创建功德动画失败:', error);
         }
-        
-        // 删除动画元素
-        setTimeout(() => {
-            document.body.removeChild(meritText);
-        }, 1500);
     }
 
     // 显示连击提示
@@ -1023,133 +1073,263 @@ document.addEventListener('DOMContentLoaded', () => {
         checkAchievements();
     }
     
-    // 心愿DIY
-    wishDiyBtn.addEventListener('click', () => {
-        // 获取对话框元素
+    // 许愿系统
+    function setupWishEvents() {
+        console.log('设置心愿按钮事件');
+        
+        // 重新获取元素引用（确保最新）
+        wishDiyBtn = document.getElementById('wish-diy');
         const wishDialog = document.getElementById('wish-dialog');
         const wishInput = document.getElementById('wish-input');
-        const wishCancel = document.getElementById('wish-cancel');
         const wishConfirm = document.getElementById('wish-confirm');
-        const dialogTitle = document.querySelector('.wish-dialog-title');
+        const wishCancel = document.getElementById('wish-cancel');
         
-        // 设置对话框标题和初始值
-        dialogTitle.textContent = translations[currentLang].promptWish;
-        wishInput.value = userWish;
-        wishInput.placeholder = currentLang === 'en' ? "Type your wish here..." : "在这里输入您的心愿...";
+        if (!wishDiyBtn) {
+            console.error('找不到许愿按钮元素');
+            return;
+        }
         
-        // 显示对话框
-        wishDialog.classList.remove('hidden');
-        wishInput.focus();
+        if (!wishDialog || !wishInput || !wishConfirm || !wishCancel) {
+            console.error('找不到许愿对话框元素');
+            return;
+        }
         
-        // 取消按钮事件
-        wishCancel.onclick = () => {
-            wishDialog.classList.add('hidden');
+        // 清除旧事件
+        const newWishBtn = wishDiyBtn.cloneNode(true);
+        if (wishDiyBtn.parentNode) {
+            wishDiyBtn.parentNode.replaceChild(newWishBtn, wishDiyBtn);
+            wishDiyBtn = newWishBtn; // 更新引用
+        }
+        
+        // 许愿按钮点击事件
+        wishDiyBtn.onclick = function() {
+            console.log('许愿按钮被点击');
+            wishDialog.style.display = 'flex';
+            wishInput.value = userWish;
+            wishInput.focus();
         };
         
         // 确认按钮事件
-        wishConfirm.onclick = () => {
-            const wish = wishInput.value.trim();
-            userWish = wish;
+        wishConfirm.onclick = function() {
+            userWish = wishInput.value.trim();
             localStorage.setItem('woodenFishWish', userWish);
-            
-            if (userWish) {
-                // 创建一个提示框而不是使用alert
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-indigo-100 text-indigo-800 px-6 py-3 rounded-lg shadow-lg z-50';
-                toast.textContent = `${translations[currentLang].wishSet}${userWish}`;
-                document.body.appendChild(toast);
-                
-                // 3秒后自动消失
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    toast.style.transition = 'opacity 0.5s';
-                    setTimeout(() => {
-                        document.body.removeChild(toast);
-                    }, 500);
-                }, 3000);
-                
-                // 更新心愿显示
-                updateWishDisplay();
-            } else {
-                // 创建一个提示框
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-indigo-100 text-indigo-800 px-6 py-3 rounded-lg shadow-lg z-50';
-                toast.textContent = translations[currentLang].wishCleared;
-                document.body.appendChild(toast);
-                
-                // 3秒后自动消失
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    toast.style.transition = 'opacity 0.5s';
-                    setTimeout(() => {
-                        document.body.removeChild(toast);
-                    }, 500);
-                }, 3000);
-                
-                // 更新心愿显示
-                updateWishDisplay();
-            }
-            
-            // 隐藏对话框
-            wishDialog.classList.add('hidden');
+            wishDialog.style.display = 'none';
+            updateWishDisplay();
+            checkAchievements();
         };
         
-        // 按下Enter键确认
-        wishInput.onkeydown = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+        // 取消按钮事件
+        wishCancel.onclick = function() {
+            wishDialog.style.display = 'none';
+        };
+        
+        // 支持回车键提交
+        wishInput.onkeydown = function(e) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 wishConfirm.click();
             }
         };
-    });
+        
+        // 修复对话框样式
+        fixWishDialogStyles();
+    }
     
-    // 分享功能
-    shareBtn.addEventListener('click', () => {
-        shareCount++;
-        shareCountElement.textContent = shareCount;
-        localStorage.setItem('shareCount', shareCount);
+    // 修复心愿对话框样式
+    function fixWishDialogStyles() {
+        const wishDialog = document.getElementById('wish-dialog');
+        const wishInput = document.getElementById('wish-input');
+        const dialogTitle = document.querySelector('.wish-dialog-title');
         
-        // Create share link
-        const shareUrl = window.location.href;
-        let shareText = translations[currentLang].shareText.replace('{0}', meritCount);
+        // 确保对话框使用flex布局
+        wishDialog.classList.add('hidden'); // 使用hidden而不是display:none
+        wishDialog.style.display = 'none';
         
-        // If there's a wish, include it
-        if (userWish) {
-            shareText += ` ${translations[currentLang].myWishIs}${userWish}.`;
+        // 设置对话框标题
+        if (dialogTitle) {
+            dialogTitle.textContent = translations[currentLang].wishDialogTitle || "Enter your wish:";
         }
         
-        shareText += ` ${translations[currentLang].joinMe}`;
+        // 设置输入框占位符
+        if (wishInput) {
+            wishInput.placeholder = translations[currentLang].wishPlaceholder || "Type your wish here...";
+        }
         
-        // Use Web Share API (for mobile devices)
-        if (navigator.share) {
-            navigator.share({
-                title: translations[currentLang].title,
-                text: shareText,
-                url: shareUrl
-            }).catch(error => {
-                console.log(`${translations[currentLang].shareFailure} ${error}`);
-                alert(`${translations[currentLang].shareLinkGenerated}\n${shareText}\n${shareUrl}`);
-            });
-        } else {
-            // Copy to clipboard
-            const textarea = document.createElement('textarea');
-            textarea.value = `${shareText} ${shareUrl}`;
-            document.body.appendChild(textarea);
-            textarea.select();
+        // 添加回车键提交功能
+        wishInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('wish-confirm').click();
+            }
+        });
+    }
+    
+    // 分享系统
+    function setupShareEvents() {
+        console.log('设置分享按钮事件');
+        
+        // 重新获取元素引用
+        shareBtn = document.getElementById('share-btn');
+        if (!shareBtn) {
+            console.error('找不到分享按钮元素');
+            return;
+        }
+        
+        // 清除旧事件
+        const newShareBtn = shareBtn.cloneNode(true);
+        if (shareBtn.parentNode) {
+            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+            shareBtn = newShareBtn; // 更新引用
+        }
+        
+        // 分享按钮点击事件
+        shareBtn.onclick = function() {
+            console.log('分享按钮被点击');
             
-            try {
-                document.execCommand('copy');
-                alert(translations[currentLang].shareLinkCopied);
-            } catch (err) {
-                alert(`${translations[currentLang].shareLink}\n${shareText}\n${shareUrl}`);
+            // 增加分享计数
+            shareCount++;
+            shareCountElement.textContent = shareCount;
+            localStorage.setItem('shareCount', shareCount);
+            
+            // 创建分享内容
+            const shareUrl = window.location.href;
+            let shareText = translations[currentLang].shareText || `I've accumulated ${meritCount} merit points on Digital Wooden Fish!`;
+            shareText = shareText.replace('{0}', meritCount);
+            
+            // 如果有心愿，包含心愿内容
+            if (userWish) {
+                const wishText = translations[currentLang].myWishIs || "My wish is: ";
+                shareText += ` ${wishText}${userWish}.`;
             }
             
-            document.body.removeChild(textarea);
+            const joinText = translations[currentLang].joinMe || "Join me!";
+            shareText += ` ${joinText}`;
+            
+            // 使用Web分享API（针对移动设备）
+            if (navigator.share) {
+                navigator.share({
+                    title: translations[currentLang].title,
+                    text: shareText,
+                    url: shareUrl
+                }).catch(error => {
+                    console.log(`分享失败: ${error}`);
+                    alert(`分享链接已生成:\n${shareText}\n${shareUrl}`);
+                });
+            } else {
+                // 复制到剪贴板
+                const textarea = document.createElement('textarea');
+                textarea.value = `${shareText} ${shareUrl}`;
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    alert(translations[currentLang].shareLinkCopied || "Share link copied to clipboard!");
+                } catch (err) {
+                    alert(`分享链接:\n${shareText}\n${shareUrl}`);
+                }
+                
+                document.body.removeChild(textarea);
+            }
+        };
+    }
+    
+    // 检查成就
+    function checkAchievements() {
+        let newAchievements = false;
+        
+        for (const achievement of achievements) {
+            if (achievement.achieved) continue;
+            
+            let achieved = false;
+            
+            if (achievement.special === 'critical' && lastCriticalHit) {
+                achieved = true;
+                lastCriticalHit = false; // 重置标志
+            } else if (achievement.special === 'wish' && userWish && !achievement.achieved) {
+                achieved = true;
+            } else if (meritCount >= achievement.threshold) {
+                achieved = true;
+            }
+            
+            if (achieved) {
+                achievement.achieved = true;
+                showAchievementNotification(achievement);
+                newAchievements = true;
+            }
         }
-    });
-
-    // 初始化功能
-    updateProgressAndLevel();
+        
+        return newAchievements;
+    }
+    
+    // 显示成就通知
+    function showAchievementNotification(achievement) {
+        achievementText.textContent = achievement.name[currentLang];
+        
+        // 显示通知
+        achievementNotification.style.opacity = '1';
+        achievementNotification.style.transform = 'translateX(0)';
+        
+        // 添加声音效果
+        const achievementSound = new Audio('assets/achievement.mp3');
+        achievementSound.volume = 0.5;
+        achievementSound.play().catch(e => console.log('成就音效播放失败:', e));
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+            achievementNotification.style.opacity = '0';
+            achievementNotification.style.transform = 'translateX(100%)';
+        }, 3000);
+    }
+    
+    // 更新等级和进度条
+    function updateProgressAndLevel() {
+        // 找到当前等级
+        let nextLevelIndex = 1;
+        for (let i = levels.length - 1; i >= 0; i--) {
+            if (meritCount >= levels[i].threshold) {
+                currentLevel = levels[i];
+                nextLevelIndex = Math.min(i + 1, levels.length - 1);
+                break;
+            }
+        }
+        
+        // 计算到下一级的进度
+        const nextLevel = levels[nextLevelIndex];
+        const progressToNextLevel = nextLevel.threshold - currentLevel.threshold;
+        const currentProgress = meritCount - currentLevel.threshold;
+        const progressPercentage = Math.min(100, Math.max(0, (currentProgress / progressToNextLevel) * 100));
+        
+        // 更新进度条
+        progressBar.style.width = `${progressPercentage}%`;
+        
+        // 更新等级提示
+        const levelTooltip = document.createElement('div');
+        levelTooltip.className = 'absolute -top-8 left-0 text-xs text-indigo-600 whitespace-nowrap';
+        levelTooltip.textContent = `${currentLevel.name[currentLang]} Lv.${currentLevel.level} (${meritCount}/${nextLevel.threshold})`;
+        
+        // 移除旧的提示
+        const oldTooltip = progressBar.parentElement.querySelector('.absolute');
+        if (oldTooltip) {
+            progressBar.parentElement.removeChild(oldTooltip);
+        }
+        
+        progressBar.parentElement.appendChild(levelTooltip);
+    }
+    
+    // 初始化
+    initializeWoodenFish();
+    
+    // 初始应用语言翻译
+    applyTranslations();
+    
+    // 如果有功德值，立即更新进度条
+    if (meritCount > 0) {
+        console.log('从存储中恢复功德:', meritCount);
+        setTimeout(() => {
+            updateProgressAndLevel();
+        }, 200);
+    }
     
     // 首次访问时显示点击提示，3秒后自动消失
     setTimeout(() => {
