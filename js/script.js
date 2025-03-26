@@ -42,11 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
             yourWish: "Your Wish",
             customizeWish: "Customize Wish",
             share: "Share",
+            tapForMerit: "Tap for Merit",
             aboutTitle: "About Digital Wooden Fish",
             aboutContent1: "The Digital Wooden Fish is inspired by the Buddhist tradition of wooden fish drums used during chanting and meditation. In many Asian cultures, tapping on a wooden fish is believed to accumulate merit and bring good fortune.",
             aboutContent2: "Our digital version brings this mindful practice to your screen, offering a moment of calm in your busy day. Each tap represents a moment of mindfulness and presence.",
             culturePerspectiveTitle: "Eastern & Western Cultural Perspectives",
-            easternPerspective: "In Eastern Buddhist tradition, the wooden fish (木鱼, mù yú) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (功德, gōng dé) – positive spiritual energy that contributes to one's karma and future well-being.",
+            easternPerspective: "In Eastern Buddhist tradition, the wooden fish (mu yu) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (gong de) – positive spiritual energy that contributes to one's karma and future well-being.",
             westernComparison: "For Western audiences, this practice can be compared to several familiar concepts:",
             westernPoint1: "Similar to prayer beads or rosaries in Christianity, where repetitive prayers accumulate spiritual benefits",
             westernPoint2: "Comparable to mindfulness practices in Western psychology, promoting present-moment awareness",
@@ -82,11 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
             yourWish: "您的心愿",
             customizeWish: "心愿DIY",
             share: "分享",
+            tapForMerit: "敲击获取功德",
             aboutTitle: "关于电子木鱼",
             aboutContent1: "电子木鱼灵感来源于佛教传统中诵经和冥想时使用的木鱼。在许多亚洲文化中，敲击木鱼被认为能积累功德并带来好运。",
             aboutContent2: "我们的数字版本将这种正念练习带到您的屏幕上，在忙碌的一天中提供一刻宁静。每一次敲击代表着一刻的正念与当下。",
             culturePerspectiveTitle: "东西方文化视角",
-            easternPerspective: "在东方佛教传统中，木鱼象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
+            easternPerspective: "在东方佛教传统中，木鱼（木鱼，mù yú）象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德（功德，gōng dé）的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
             westernComparison: "对西方受众来说，这种修行可以比作几个熟悉的概念：",
             westernPoint1: "类似于基督教中的念珠或玫瑰经，重复的祈祷积累精神福祉",
             westernPoint2: "相当于西方心理学中的正念练习，促进当下的觉知",
@@ -146,8 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 更新各部分标题
         document.querySelectorAll('h2').forEach(h2 => {
-            if (h2.textContent.includes('Tap for Merit') || h2.textContent.includes('Tap for 功德')) {
-                h2.textContent = `Tap for ${translations[currentLang].merit}`;
+            if (h2.textContent.includes('Tap for Merit') || h2.textContent.includes('Tap for 功德') || h2.textContent.includes('敲击获取功德')) {
+                h2.textContent = translations[currentLang].tapForMerit;
             } else if (h2.textContent.includes('About') || h2.textContent.includes('关于')) {
                 h2.textContent = translations[currentLang].aboutTitle;
             } else if (h2.textContent.includes('How to Use') || h2.textContent.includes('使用方法')) {
@@ -185,10 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (nextElement && nextElement.tagName === 'UL') {
                         const listItems = nextElement.querySelectorAll('li');
                         if (listItems.length >= 4) {
-                            listItems[0].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint1.split(',')[0]}</span>${translations[currentLang].westernPoint1.split(',')[1] || ''}`;
-                            listItems[1].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint2.split(',')[0]}</span>${translations[currentLang].westernPoint2.split(',')[1] || ''}`;
-                            listItems[2].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint3.split(',')[0]}</span>${translations[currentLang].westernPoint3.split(',')[1] || ''}`;
-                            listItems[3].innerHTML = `<span class="font-medium">${translations[currentLang].westernPoint4.split(',')[0]}</span>${translations[currentLang].westernPoint4.split(',')[1] || ''}`;
+                            listItems[0].textContent = translations[currentLang].westernPoint1;
+                            listItems[1].textContent = translations[currentLang].westernPoint2;
+                            listItems[2].textContent = translations[currentLang].westernPoint3;
+                            listItems[3].textContent = translations[currentLang].westernPoint4;
                         }
                         nextElement = nextElement.nextElementSibling;
                     }
