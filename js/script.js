@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 获取DOM元素
-    const woodenFish = document.getElementById('wooden-fish');
+    const woodenFishContainer = document.getElementById('wooden-fish').parentElement;
+    let woodenFish = document.getElementById('wooden-fish');
     const meritCountElement = document.getElementById('merit-count');
     const meritPopup = document.getElementById('merit-popup');
     const meritCounter = document.getElementById('merit-counter');
@@ -9,8 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareCountElement = document.querySelector('.share-count');
     const languageToggle = document.getElementById('language-toggle');
 
-    // 音效
-    const tapSound = new Audio('assets/wooden-fish-sound.mp3');
+    // 首先完全删除木鱼元素并重建一个全新的
+    const newWoodenFish = document.createElement('div');
+    newWoodenFish.id = 'wooden-fish';
+    newWoodenFish.className = 'wooden-fish hover:scale-105 transition-transform duration-300 cursor-pointer mb-6 relative group';
+    newWoodenFish.innerHTML = `
+        <div class="absolute inset-0 bg-amber-300 rounded-full opacity-0 group-hover:opacity-20 group-active:opacity-40 transition-opacity duration-300 transform scale-110"></div>
+        <img src="assets/wooden-fish.png" alt="Wooden Fish" class="w-48 md:w-64 mx-auto drop-shadow-lg">
+    `;
+    woodenFish.replaceWith(newWoodenFish);
+    woodenFish = newWoodenFish; // 更新引用
+
+    // 音效 - 创建新的音频上下文和缓冲区
+    let tapSound = new Audio('assets/wooden-fish-sound.mp3');
+    tapSound.preload = 'auto';
     
     // 功德计数器 - 每次刷新页面时重置为0
     let meritCount = 0;
@@ -24,8 +37,20 @@ document.addEventListener('DOMContentLoaded', () => {
     meritCountElement.textContent = meritCount;
     shareCountElement.textContent = shareCount;
 
-    // 检测设备类型
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // 检测设备类型 - 更精确的移动设备检测
+    const isMobile = (() => {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        
+        // 检查触摸事件支持
+        const hasTouchSupport = 'ontouchstart' in window || 
+                               navigator.maxTouchPoints > 0 || 
+                               navigator.msMaxTouchPoints > 0;
+                               
+        return mobileRegex.test(userAgent) && hasTouchSupport;
+    })();
+    
+    console.log(`设备类型: ${isMobile ? '移动设备' : '桌面设备'}`);
     
     // 语言设置 - 默认英文，从localStorage中获取
     let currentLang = localStorage.getItem('woodenFishLang') || 'en';
@@ -126,10 +151,52 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('h1').textContent = translations[currentLang].title;
         document.querySelector('header p').textContent = translations[currentLang].subtitle;
         
-        // 更新敲击标题 - 直接使用专门的选择器，确保准确更新
-        const tapTitle = document.querySelector('.tap-title');
+        // 更新敲击标题 - 使用多种选择器策略，确保一定能找到标题
+        const tapTitleSelectors = [
+            '.tap-title',  // 类选择器
+            'section:first-of-type h2',  // 第一个section的h2
+            'main > section:first-child h2',  // main下第一个section的h2
+            // 通过内容匹配
+            'h2:contains("Tap for Merit")', 
+            'h2:contains("敲击获取功德")',
+            'h2:contains("功德")',
+            'h2:contains("tap")',
+            'h2:contains("merit")'
+        ];
+        
+        // 自定义:contains选择器
+        let tapTitle = null;
+        
+        // 首先尝试直接类选择器
+        tapTitle = document.querySelector('.tap-title');
+        
+        // 如果没找到，尝试通过位置选择
+        if (!tapTitle) {
+            tapTitle = document.querySelector('section:first-of-type h2') || 
+                      document.querySelector('main > section:first-child h2');
+        }
+        
+        // 如果还是没找到，尝试通过内容匹配
+        if (!tapTitle) {
+            const allH2s = document.querySelectorAll('h2');
+            for (const h2 of allH2s) {
+                const text = h2.textContent.toLowerCase();
+                if (text.includes('tap') || 
+                    text.includes('merit') || 
+                    text.includes('功德') || 
+                    text.includes('敲击')) {
+                    tapTitle = h2;
+                    break;
+                }
+            }
+        }
+        
+        // 如果找到了，更新内容
         if (tapTitle) {
             tapTitle.textContent = translations[currentLang].tapForMerit;
+            console.log('已更新敲击标题:', tapTitle);
+        } else {
+            console.warn('无法找到敲击标题元素');
         }
         
         // 更新指令文本
@@ -172,99 +239,68 @@ document.addEventListener('DOMContentLoaded', () => {
         // 更新关于电子木鱼部分内容
         const aboutSection = document.querySelector('section:nth-of-type(2)');
         if (aboutSection) {
-            // 获取标题下面的段落
-            const paragraphs = aboutSection.querySelectorAll('.prose p');
-            if (paragraphs.length >= 2) {
-                paragraphs[0].textContent = translations[currentLang].aboutContent1;
-                paragraphs[1].textContent = translations[currentLang].aboutContent2;
-            } else {
-                // 如果没有找到预期的paragraphs，尝试其他选择器
-                const allParagraphs = aboutSection.querySelectorAll('p');
-                if (allParagraphs.length >= 2) {
-                    allParagraphs[0].textContent = translations[currentLang].aboutContent1;
-                    allParagraphs[1].textContent = translations[currentLang].aboutContent2;
+            // 1. 直接更新标题 - 不依赖特定类
+            const aboutH2 = aboutSection.querySelector('h2');
+            if (aboutH2) {
+                aboutH2.textContent = translations[currentLang].aboutTitle;
+            }
+            
+            // 2. 直接操作所有段落 - 不依赖特定类
+            const allParagraphs = aboutSection.querySelectorAll('p');
+            if (allParagraphs.length >= 2) {
+                // 必须更新的前两个段落
+                allParagraphs[0].textContent = translations[currentLang].aboutContent1;
+                allParagraphs[1].textContent = translations[currentLang].aboutContent2;
+                
+                // 如果有足够的段落，尝试更新剩余内容
+                if (allParagraphs.length >= 4) {
+                    allParagraphs[2].textContent = translations[currentLang].easternPerspective;
+                    allParagraphs[3].textContent = translations[currentLang].westernComparison;
+                }
+                
+                // 查找结论段落 - 通常是最后一个或倒数第二个
+                if (allParagraphs.length >= 5) {
+                    // 尝试识别结论段落 - 通常包含"While Western"或相关词语
+                    for (let i = 4; i < allParagraphs.length; i++) {
+                        if (allParagraphs[i].textContent.includes('while') || 
+                            allParagraphs[i].textContent.includes('bringing') ||
+                            allParagraphs[i].textContent.includes('西方传统') ||
+                            allParagraphs[i].textContent.includes('参与了')) {
+                            allParagraphs[i].textContent = translations[currentLang].culturalConclusion;
+                            break;
+                        }
+                    }
                 }
             }
             
-            // 更新东西方文化视角部分
-            const h3Elements = aboutSection.querySelectorAll('h3');
-            if (h3Elements.length > 0) {
-                for (const h3 of h3Elements) {
-                    if (h3.textContent.includes('Eastern & Western') || h3.textContent.includes('东西方')) {
-                        h3.textContent = translations[currentLang].culturePerspectiveTitle;
-                        
-                        // 查找并更新该h3后面的内容
-                        let nextElement = h3.nextElementSibling;
-                        if (nextElement && nextElement.tagName === 'P') {
-                            nextElement.textContent = translations[currentLang].easternPerspective;
-                            nextElement = nextElement.nextElementSibling;
-                        }
-                        
-                        if (nextElement && nextElement.tagName === 'P') {
-                            nextElement.textContent = translations[currentLang].westernComparison;
-                            nextElement = nextElement.nextElementSibling;
-                        }
-                        
-                        if (nextElement && nextElement.tagName === 'UL') {
-                            const listItems = nextElement.querySelectorAll('li');
-                            if (listItems.length >= 4) {
-                                // 为了保持格式，使用innerHTML而不是textContent
-                                if (currentLang === 'en') {
-                                    listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
-                                    listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
-                                    listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
-                                    listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
-                                } else {
-                                    listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
-                                    listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
-                                    listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
-                                    listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
-                                }
-                            }
-                            nextElement = nextElement.nextElementSibling;
-                        }
-                        
-                        if (nextElement && nextElement.tagName === 'P') {
-                            nextElement.textContent = translations[currentLang].culturalConclusion;
-                        }
-                    }
+            // 3. 更新"东西方文化视角"标题 - 使用内容匹配而不是特定选择器
+            const allHeadings = aboutSection.querySelectorAll('h3, h4, .text-xl, .font-semibold');
+            for (const heading of allHeadings) {
+                if (heading.textContent.includes('Eastern') || 
+                    heading.textContent.includes('Western') || 
+                    heading.textContent.includes('东西方') ||
+                    heading.textContent.includes('文化视角')) {
+                    heading.textContent = translations[currentLang].culturePerspectiveTitle;
+                    break;
                 }
-            } else {
-                // 如果没有找到h3元素，尝试直接更新所有内容
-                const allContent = aboutSection.innerHTML;
-                if (allContent.includes('Eastern & Western') || allContent.includes('eastern perspective')) {
-                    // 深度扫描整个关于部分的段落
-                    const allAboutParagraphs = aboutSection.querySelectorAll('p');
-                    
-                    // 映射段落到翻译内容
-                    if (allAboutParagraphs.length >= 5) {
-                        allAboutParagraphs[0].textContent = translations[currentLang].aboutContent1;
-                        allAboutParagraphs[1].textContent = translations[currentLang].aboutContent2;
-                        allAboutParagraphs[2].textContent = translations[currentLang].easternPerspective;
-                        allAboutParagraphs[3].textContent = translations[currentLang].westernComparison;
-                        allAboutParagraphs[4].textContent = translations[currentLang].culturalConclusion;
-                    }
-                    
-                    // 查找并更新标题
-                    const cultureTitleEl = aboutSection.querySelector('h3, strong');
-                    if (cultureTitleEl) {
-                        cultureTitleEl.textContent = translations[currentLang].culturePerspectiveTitle;
-                    }
-                    
-                    // 查找并更新列表项
-                    const listItems = aboutSection.querySelectorAll('li');
-                    if (listItems.length >= 4) {
-                        if (currentLang === 'en') {
-                            listItems[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
-                            listItems[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
-                            listItems[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
-                            listItems[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
-                        } else {
-                            listItems[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
-                            listItems[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
-                            listItems[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
-                            listItems[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
-                        }
+            }
+            
+            // 4. 更新列表项 - 寻找所有可能的列表
+            const lists = aboutSection.querySelectorAll('ul, ol');
+            for (const list of lists) {
+                const items = list.querySelectorAll('li');
+                if (items.length >= 4) {
+                    // 使用完整的HTML替换，保留原有格式
+                    if (currentLang === 'en') {
+                        items[0].innerHTML = `<span class="font-medium">Similar to prayer beads or rosaries in Christianity</span>, where repetitive prayers accumulate spiritual benefits`;
+                        items[1].innerHTML = `<span class="font-medium">Comparable to mindfulness practices in Western psychology</span>, promoting present-moment awareness`;
+                        items[2].innerHTML = `<span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states`;
+                        items[3].innerHTML = `<span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life`;
+                    } else {
+                        items[0].innerHTML = `<span class="font-medium">类似于基督教中的念珠或玫瑰经</span>，重复的祈祷积累精神福祉`;
+                        items[1].innerHTML = `<span class="font-medium">相当于西方心理学中的正念练习</span>，促进当下的觉知`;
+                        items[2].innerHTML = `<span class="font-medium">如同数字感恩日记</span>，帮助培养感激之情和积极的心理状态`;
+                        items[3].innerHTML = `<span class="font-medium">类似于冥想应用程序</span>，在日常生活中提供暂停和反思的时刻`;
                     }
                 }
             }
@@ -307,152 +343,314 @@ document.addEventListener('DOMContentLoaded', () => {
     let tapThreshold = Math.floor(Math.random() * 13) + 8;  // 触发暴击所需的连续点击次数(随机8-20次)
     let criticalCooldown = false;  // 暴击冷却状态
     
-    // 预加载音频
-    const preloadAudio = () => {
-        tapSound.load();
-        // 移动设备需要一个用户交互才能播放音频
-        if (isMobile) {
-            document.body.addEventListener('touchstart', function initAudio() {
-                tapSound.play().then(() => {
-                    tapSound.pause();
-                    tapSound.currentTime = 0;
-                    document.body.removeEventListener('touchstart', initAudio);
-                }).catch(error => {
-                    console.log('音频初始化失败:', error);
-                });
-            }, { once: true });
-        }
+    // 事件处理全局状态管理 - 全新实现
+    const tapState = {
+        processing: false,           // 是否正在处理点击
+        lastTimestamp: 0,            // 上次点击的时间戳
+        touchId: null,               // 当前触摸ID
+        debounceTime: 300,           // 去抖动时间(毫秒)
+        lockTime: 500,               // 锁定时间(毫秒)
+        audioPlaying: false,         // 音频是否正在播放
+        audioError: false            // 音频是否发生错误
     };
     
+    // 安全的音频播放函数
+    function safePlayAudio() {
+        if (tapState.audioPlaying) {
+            console.log('音频已在播放中，跳过');
+            return Promise.resolve();
+        }
+        
+        if (tapState.audioError) {
+            console.log('音频系统错误，跳过');
+            return Promise.reject(new Error('音频系统错误'));
+        }
+        
+        tapState.audioPlaying = true;
+        
+        try {
+            // 重置音频状态
+            tapSound.pause();
+            tapSound.currentTime = 0;
+            
+            // 播放音频并处理完成事件
+            return tapSound.play()
+                .then(() => {
+                    // 音频播放成功，等待结束
+                    return new Promise((resolve) => {
+                        // 音频自然结束或提前停止时
+                        const handleEnded = () => {
+                            tapSound.removeEventListener('ended', handleEnded);
+                            tapState.audioPlaying = false;
+                            resolve();
+                        };
+                        
+                        tapSound.addEventListener('ended', handleEnded, { once: true });
+                        
+                        // 设置安全超时，确保状态最终会被重置
+                        setTimeout(() => {
+                            tapState.audioPlaying = false;
+                            tapSound.removeEventListener('ended', handleEnded);
+                            resolve();
+                        }, 1000); // 1秒后超时
+                    });
+                })
+                .catch(error => {
+                    console.error('音频播放错误:', error);
+                    tapState.audioPlaying = false;
+                    
+                    // 尝试重新加载音频
+                    return new Promise((resolve) => {
+                        tapSound = new Audio('assets/wooden-fish-sound.mp3');
+                        tapSound.addEventListener('canplaythrough', () => {
+                            resolve();
+                        }, { once: true });
+                        
+                        // 设置超时，防止长时间等待
+                        setTimeout(resolve, 2000);
+                    });
+                });
+        } catch (error) {
+            console.error('严重的音频系统错误:', error);
+            tapState.audioError = true;
+            tapState.audioPlaying = false;
+            return Promise.reject(error);
+        }
+    }
+    
+    // 预加载音频 - 更安全的方式
+    function preloadAudio() {
+        tapSound.load();
+        
+        if (isMobile) {
+            // 在移动设备上，我们需要用户交互来解锁音频
+            console.log('移动设备: 等待用户交互来解锁音频');
+            
+            // 在整个文档上监听一次性的触摸事件
+            document.body.addEventListener('touchstart', function initAudio() {
+                console.log('用户交互: 尝试解锁音频');
+                
+                // 播放并立即暂停音频以解锁
+                const unlockPromise = tapSound.play()
+                    .then(() => {
+                        console.log('音频解锁成功');
+                        tapSound.pause();
+                        tapSound.currentTime = 0;
+                    })
+                    .catch(error => {
+                        console.warn('音频解锁尝试失败:', error);
+                        // 错误处理 - 可能需要重新加载
+                        tapSound = new Audio('assets/wooden-fish-sound.mp3');
+                        tapSound.load();
+                    })
+                    .finally(() => {
+                        // 无论成功失败，都移除这个一次性事件监听器
+                        document.body.removeEventListener('touchstart', initAudio);
+                    });
+                
+                // 为了防止音频解锁阻塞UI，我们给一个超时
+                setTimeout(() => {
+                    document.body.removeEventListener('touchstart', initAudio);
+                }, 5000);
+            }, { once: true, passive: true });
+        } else {
+            console.log('桌面设备: 音频预加载');
+        }
+    }
+    
+    // 调用预加载
     preloadAudio();
-    
-    // 创建一个标记，用于防止事件重复触发
-    let isTapping = false;
 
-    // 点击或触摸事件控制变量
-    let lastEventTime = 0;
-    const eventThreshold = 500; // 事件间隔阈值(毫秒)
-    
-    // 完全清除之前的所有事件监听器
-    woodenFish.removeEventListener('click', tapWoodenFish);
-    woodenFish.removeEventListener('touchstart', tapWoodenFish);
-    woodenFish.removeEventListener('touchend', () => {});
-    woodenFish.removeEventListener('touchmove', () => {});
-    
-    // 创建添加波纹效果的函数
-    function createRippleEffect(element, x, y) {
+    // 波纹效果函数
+    function createRippleEffect(x, y) {
         const ripple = document.createElement('div');
         ripple.className = 'ripple';
         
-        const rect = element.getBoundingClientRect();
+        const rect = woodenFish.getBoundingClientRect();
         
         ripple.style.left = `${x - rect.left}px`;
         ripple.style.top = `${y - rect.top}px`;
         ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
         ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
         
-        element.appendChild(ripple);
+        woodenFish.appendChild(ripple);
         
-        // 动画完成后移除波纹元素
         setTimeout(() => {
-            if (element.contains(ripple)) {
-                element.removeChild(ripple);
+            if (woodenFish.contains(ripple)) {
+                ripple.remove();
             }
         }, 800);
     }
-    
-    // 统一的事件处理函数
-    function handleTap(e) {
-        e.preventDefault();
-        
-        // 阻止事件冒泡
-        e.stopPropagation();
-        
+
+    // 统一的点击处理函数 - 完全重写
+    function handleTap(clientX, clientY) {
+        // 获取当前时间戳
         const now = Date.now();
         
-        // 如果事件触发太快或正在处理中，忽略它
-        if (now - lastEventTime < eventThreshold || isTapping) {
-            return;
+        // 防抖动检查 - 如果两次点击间隔太短，忽略这次点击
+        if (now - tapState.lastTimestamp < tapState.debounceTime) {
+            console.log(`防抖: 忽略过快的点击 (${now - tapState.lastTimestamp}ms < ${tapState.debounceTime}ms)`);
+            return false;
         }
         
-        // 更新时间和状态
-        lastEventTime = now;
-        isTapping = true;
-        
-        // 添加波纹效果
-        let clientX, clientY;
-        if (e.type === 'touchstart') {
-            const touch = e.touches[0];
-            clientX = touch.clientX;
-            clientY = touch.clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
+        // 状态锁检查 - 如果当前正在处理点击，忽略这次点击
+        if (tapState.processing) {
+            console.log('状态锁: 当前正在处理点击，忽略');
+            return false;
         }
-        createRippleEffect(woodenFish, clientX, clientY);
         
-        // 敲击木鱼
+        // 更新状态
+        tapState.lastTimestamp = now;
+        tapState.processing = true;
+        
+        // 创建视觉效果
+        createRippleEffect(clientX, clientY);
+        
+        // 执行木鱼敲击逻辑
         tapWoodenFish();
         
-        // 设置延时，允许下一次点击
+        // 设置状态锁定时间
         setTimeout(() => {
-            isTapping = false;
-        }, 100);
+            console.log('状态锁: 重置处理状态');
+            tapState.processing = false;
+        }, tapState.lockTime);
+        
+        return true;
     }
     
-    // 根据设备类型只绑定一种事件
-    if (isMobile) {
-        // 在移动设备上，只使用触摸事件
-        woodenFish.addEventListener('touchstart', handleTap, { passive: false });
+    // 鼠标和触摸事件设置 - 使用事件委托
+    function setupEventListeners() {
+        console.log('设置事件监听器 - 清除旧监听器');
         
-        // 阻止所有其他相关事件
-        woodenFish.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, { passive: false });
+        // 清除所有可能的事件监听 (通过克隆和替换)
+        const wrapper = document.createElement('div');
+        wrapper.className = woodenFishContainer.className;
+        wrapper.innerHTML = woodenFishContainer.innerHTML;
+        woodenFishContainer.parentNode.replaceChild(wrapper, woodenFishContainer);
         
-        woodenFish.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, { passive: false });
+        // 重新获取引用
+        woodenFish = document.getElementById('wooden-fish');
         
-        // 阻止点击事件
-        woodenFish.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-    } else {
-        // 在桌面设备上，只使用鼠标事件
-        woodenFish.addEventListener('click', handleTap);
-    }
-    
-    // 键盘空格事件
-    document.addEventListener('keydown', (event) => {
-        if (event.key === ' ' || event.code === 'Space') {
-            event.preventDefault();
+        // 为移动设备添加事件处理
+        if (isMobile) {
+            console.log('设置移动设备触摸事件');
             
-            const now = Date.now();
+            // 触摸开始事件 - 使用捕获阶段
+            woodenFish.addEventListener('touchstart', function(e) {
+                console.log('触摸开始事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 如果已经有触摸ID，忽略这次触摸
+                if (tapState.touchId !== null) {
+                    console.log('已有触摸ID，忽略');
+                    return false;
+                }
+                
+                // 只处理第一个触摸点
+                const touch = e.touches[0];
+                tapState.touchId = touch.identifier;
+                
+                // 调用通用处理函数
+                const result = handleTap(touch.clientX, touch.clientY);
+                console.log(`触摸处理结果: ${result ? '成功' : '被忽略'}`);
+                
+                return false;
+            }, { capture: true, passive: false });
             
-            // 如果事件触发太快或正在处理中，忽略它
-            if (now - lastEventTime < eventThreshold || isTapping) {
-                return;
-            }
+            // 触摸结束事件 - 用于重置触摸ID
+            woodenFish.addEventListener('touchend', function(e) {
+                console.log('触摸结束事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 验证触摸ID是否匹配
+                if (e.changedTouches.length > 0) {
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === tapState.touchId) {
+                            console.log('触摸ID匹配，重置');
+                            tapState.touchId = null;
+                            break;
+                        }
+                    }
+                } else {
+                    // 始终重置，以防万一
+                    tapState.touchId = null;
+                }
+                
+                return false;
+            }, { capture: true, passive: false });
             
-            lastEventTime = now;
-            isTapping = true;
+            // 取消触摸
+            woodenFish.addEventListener('touchcancel', function(e) {
+                console.log('触摸取消事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                tapState.touchId = null;
+                return false;
+            }, { capture: true, passive: false });
             
-            tapWoodenFish();
+            // 阻止触摸移动
+            woodenFish.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }, { capture: true, passive: false });
             
-            // 设置延时，允许下一次点击
-            setTimeout(() => {
-                isTapping = false;
-            }, 100);
+            // 阻止所有鼠标事件
+            ['mousedown', 'mouseup', 'mousemove', 'click'].forEach(eventType => {
+                woodenFish.addEventListener(eventType, function(e) {
+                    console.log(`阻止鼠标事件: ${eventType}`);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }, { capture: true, passive: false });
+            });
+        } else {
+            console.log('设置桌面设备点击事件');
+            
+            // 桌面设备 - 只使用点击事件
+            woodenFish.addEventListener('click', function(e) {
+                console.log('点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 调用通用处理函数
+                handleTap(e.clientX, e.clientY);
+                
+                return false;
+            }, { capture: false });
         }
-    });
+        
+        // 空格键事件监听
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' || e.key === ' ') {
+                console.log('空格键事件触发');
+                e.preventDefault();
+                
+                // 获取木鱼中心坐标
+                const rect = woodenFish.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // 调用通用处理函数
+                handleTap(centerX, centerY);
+            }
+        });
+        
+        console.log('事件监听器设置完成');
+        
+        // 确保在DOM更新后重新应用翻译
+        applyTranslations();
+    }
+    
+    // 设置事件监听器
+    setupEventListeners();
 
-    // 敲击木鱼函数
+    // 木鱼敲击核心函数
     function tapWoodenFish() {
-        // 获取当前时间
+        // 获取当前时间用于连击判断
         const currentTime = Date.now();
         
         // 判断是否为快速点击（点击间隔小于阈值）
@@ -503,35 +701,10 @@ document.addEventListener('DOMContentLoaded', () => {
             woodenFish.classList.remove('tapped');
         }, 100);
         
-        // 完全重写音频播放逻辑
-        (function playSound() {
-            try {
-                // 重置音频状态
-                tapSound.pause();
-                tapSound.currentTime = 0;
-                
-                // 播放音频
-                let played = false;
-                const playPromise = tapSound.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise
-                        .then(() => {
-                            played = true;
-                        })
-                        .catch(error => {
-                            console.log('无法播放音效:', error);
-                            // 如果未能播放，尝试创建新的音频对象播放
-                            if (!played) {
-                                const newSound = new Audio('assets/wooden-fish-sound.mp3');
-                                newSound.play().catch(e => console.log('备用音频播放失败:', e));
-                            }
-                        });
-                }
-            } catch (error) {
-                console.log('音频播放错误:', error);
-            }
-        })();
+        // 安全播放音频
+        safePlayAudio().catch(err => {
+            console.error('音频播放失败，继续执行功能流程', err);
+        });
         
         // 增加功德
         meritCount += meritIncrease;
