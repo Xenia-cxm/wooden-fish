@@ -9,6 +9,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareBtn = document.getElementById('share-btn');
     const shareCountElement = document.querySelector('.share-count');
     const languageToggle = document.getElementById('language-toggle');
+    const progressBar = document.getElementById('progress-bar');
+    const achievementNotification = document.getElementById('achievement-notification');
+    const achievementText = document.getElementById('achievement-text');
+
+    // 游戏化元素 - 成就系统
+    const achievements = [
+        { id: 'first_merit', name: { en: 'First Merit', zh: '初次功德' }, description: { en: 'Earn your first merit point', zh: '获得你的第一个功德点' }, threshold: 1, achieved: false },
+        { id: 'ten_merits', name: { en: 'Beginner Monk', zh: '初级信徒' }, description: { en: 'Earn 10 merit points', zh: '获得10个功德点' }, threshold: 10, achieved: false },
+        { id: 'fifty_merits', name: { en: 'Dedicated Follower', zh: '虔诚信徒' }, description: { en: 'Earn 50 merit points', zh: '获得50个功德点' }, threshold: 50, achieved: false },
+        { id: 'hundred_merits', name: { en: 'Enlightened One', zh: '觉悟者' }, description: { en: 'Earn 100 merit points', zh: '获得100个功德点' }, threshold: 100, achieved: false },
+        { id: 'first_critical', name: { en: 'Critical Success', zh: '暴击成功' }, description: { en: 'Get your first critical hit', zh: '获得你的第一次暴击' }, threshold: 0, achieved: false, special: 'critical' },
+        { id: 'wish_set', name: { en: 'Wishful Thinking', zh: '许愿成功' }, description: { en: 'Set your first wish', zh: '设置你的第一个心愿' }, threshold: 0, achieved: false, special: 'wish' }
+    ];
+    
+    // 进度等级和目标
+    const levels = [
+        { level: 1, name: { en: 'Novice', zh: '新手' }, threshold: 0 },
+        { level: 2, name: { en: 'Apprentice', zh: '学徒' }, threshold: 10 },
+        { level: 3, name: { en: 'Practitioner', zh: '修行者' }, threshold: 50 },
+        { level: 4, name: { en: 'Adept', zh: '精通者' }, threshold: 100 },
+        { level: 5, name: { en: 'Master', zh: '大师' }, threshold: 200 },
+        { level: 6, name: { en: 'Grandmaster', zh: '宗师' }, threshold: 500 },
+        { level: 7, name: { en: 'Enlightened', zh: '觉悟者' }, threshold: 1000 }
+    ];
+    
+    // 当前等级
+    let currentLevel = levels[0];
+    
+    // 更新等级和进度条
+    function updateProgressAndLevel() {
+        // 找到当前等级
+        let nextLevelIndex = 1;
+        for (let i = levels.length - 1; i >= 0; i--) {
+            if (meritCount >= levels[i].threshold) {
+                currentLevel = levels[i];
+                nextLevelIndex = Math.min(i + 1, levels.length - 1);
+                break;
+            }
+        }
+        
+        // 计算到下一级的进度
+        const nextLevel = levels[nextLevelIndex];
+        const progressToNextLevel = nextLevel.threshold - currentLevel.threshold;
+        const currentProgress = meritCount - currentLevel.threshold;
+        const progressPercentage = Math.min(100, Math.max(0, (currentProgress / progressToNextLevel) * 100));
+        
+        // 更新进度条
+        progressBar.style.width = `${progressPercentage}%`;
+        
+        // 更新等级提示
+        const levelTooltip = document.createElement('div');
+        levelTooltip.className = 'absolute -top-8 left-0 text-xs text-indigo-600 whitespace-nowrap';
+        levelTooltip.textContent = `${currentLevel.name[currentLang]} Lv.${currentLevel.level} (${meritCount}/${nextLevel.threshold})`;
+        
+        // 移除旧的提示
+        const oldTooltip = progressBar.parentElement.querySelector('.absolute');
+        if (oldTooltip) {
+            progressBar.parentElement.removeChild(oldTooltip);
+        }
+        
+        progressBar.parentElement.appendChild(levelTooltip);
+    }
+    
+    // 检查成就
+    function checkAchievements() {
+        let newAchievements = false;
+        
+        for (const achievement of achievements) {
+            if (achievement.achieved) continue;
+            
+            let achieved = false;
+            
+            if (achievement.special === 'critical' && lastCriticalHit) {
+                achieved = true;
+                lastCriticalHit = false; // 重置标志
+            } else if (achievement.special === 'wish' && userWish && !achievement.achieved) {
+                achieved = true;
+            } else if (meritCount >= achievement.threshold) {
+                achieved = true;
+            }
+            
+            if (achieved) {
+                achievement.achieved = true;
+                showAchievementNotification(achievement);
+                newAchievements = true;
+            }
+        }
+        
+        return newAchievements;
+    }
+    
+    // 显示成就通知
+    function showAchievementNotification(achievement) {
+        achievementText.textContent = achievement.name[currentLang];
+        
+        // 显示通知
+        achievementNotification.style.opacity = '1';
+        achievementNotification.style.transform = 'translateX(0)';
+        
+        // 添加声音效果
+        const achievementSound = new Audio('assets/achievement.mp3');
+        achievementSound.volume = 0.5;
+        achievementSound.play().catch(e => console.log('成就音效播放失败:', e));
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+            achievementNotification.style.opacity = '0';
+            achievementNotification.style.transform = 'translateX(100%)';
+        }, 3000);
+    }
+    
+    // 暴击标志
+    let lastCriticalHit = false;
 
     // 首先完全删除木鱼元素并重建一个全新的
     const newWoodenFish = document.createElement('div');
@@ -100,26 +213,26 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         zh: {
             title: "电子木鱼",
-            subtitle: "敲电子木鱼，见机甲佛祖，修赛博真经",
-            tapInstructions: "按下空格键或点击积攒功德",
+            subtitle: "数电子木鱼，记录你禅修，获得平静心",
+            tapInstructions: "按空格键或点击木鱼来积攒功德",
             criticalHitSoon: "即将暴击！",
             combo: "连击",
             merit: "功德",
             yourWish: "您的心愿",
-            customizeWish: "心愿DIY",
+            customizeWish: "许愿",
             share: "分享",
-            tapForMerit: "敲击获取功德",
+            tapForMerit: "点击积攒功德",
             aboutTitle: "关于电子木鱼",
-            aboutContent1: "电子木鱼灵感来源于佛教传统中诵经和冥想时使用的木鱼。在许多亚洲文化中，敲击木鱼被认为能积累功德并带来好运。",
-            aboutContent2: "我们的数字版本将这种正念练习带到您的屏幕上，在忙碌的一天中提供一刻宁静。每一次敲击代表着一刻的正念与当下。",
+            aboutContent1: "电子木鱼是受到佛教传统中木鱼敲击仪式的启发而创建的数字化产品。在许多亚洲文化中，敲击木鱼被认为可以积累功德并带来好运。",
+            aboutContent2: "我们的电子版本将这种正念的修行带到了你的屏幕上，在忙碌的一天中提供一刻安宁。每一次点击都代表着正念和当下的存在。",
             culturePerspectiveTitle: "东西方文化视角",
-            easternPerspective: "在东方佛教传统中，木鱼象征着警醒。鱼眼从不闭合，代表着持续的觉知。有节奏地敲击木鱼是积累功德的方式——功德是一种积极的精神能量，有助于改善个人的因果和未来福祉。",
-            westernComparison: "对西方受众来说，这种修行可以比作几个熟悉的概念：",
+            easternPerspective: "在东方佛教传统中，木鱼（木鱼, mù yú）象征着警觉的意识。鱼从不闭眼，代表着持续的觉知。有节奏的敲击是积累功德（功德, gōng dé）的方式——这种积极的精神能量有助于一个人的因果和未来福祉。",
+            westernComparison: "对于西方观众，这种修行可以与几个熟悉的概念相比较：",
             westernPoint1: "类似于基督教中的念珠或玫瑰经，重复的祈祷积累精神福祉",
             westernPoint2: "相当于西方心理学中的正念练习，促进当下的觉知",
             westernPoint3: "如同数字感恩日记，帮助培养感激之情和积极的心理状态",
             westernPoint4: "类似于冥想应用程序，在日常生活中提供暂停和反思的时刻",
-            culturalConclusion: "西方传统通常强调个人救赎或个人福祉，而东方功德概念同时关注个人精神成长和利益他人。通过敲击电子木鱼，您参与了一个为数字时代重新构想的古老传统——将东方精神实践与当代西方正念方法结合在一起。",
+            culturalConclusion: "虽然西方传统往往强调个人救赎或个人福祉，但东方功德的概念同时关注个人精神成长和利益他人。通过点击电子木鱼，你参与了一个百年传统的数字化重塑——将东方精神实践与当代西方正念方法结合在一起。",
             howToUseTitle: "使用方法",
             tapFishTitle: "敲击木鱼",
             tapFishDesc: "点击木鱼或按空格键敲击",
@@ -127,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             makeWishDesc: "自定义您的心愿和意向",
             shareTitle: "分享",
             shareDesc: "与朋友分享您的功德数",
-            promptWish: "请输入您的心愿:",
+            promptWish: "输入你的心愿：",
             wishSet: "您的心愿已设置: ",
             meritTowardsWish: "功德值将用于实现此心愿。",
             wishCleared: "已清除心愿",
@@ -677,6 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isCritical) {
             consecutiveTaps = 0;
             criticalCooldown = true;
+            lastCriticalHit = true; // 设置暴击标志
             
             // 重新设置随机目标连击数
             tapThreshold = Math.floor(Math.random() * 13) + 8;
@@ -685,6 +799,27 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 criticalCooldown = false;
             }, 3000);
+            
+            // 添加游戏化元素 - 暴击提示和特效增强
+            const criticalMessage = document.createElement('div');
+            criticalMessage.className = 'fixed top-1/4 left-1/2 transform -translate-x-1/2 bg-amber-100 text-amber-800 px-8 py-4 rounded-xl shadow-xl z-50 font-bold text-xl';
+            criticalMessage.textContent = currentLang === 'en' ? '✨ CRITICAL HIT! ✨' : '✨ 暴击！✨';
+            criticalMessage.style.opacity = '0';
+            criticalMessage.style.transition = 'opacity 0.3s, transform 0.5s';
+            document.body.appendChild(criticalMessage);
+            
+            setTimeout(() => {
+                criticalMessage.style.opacity = '1';
+                criticalMessage.style.transform = 'translate(-50%, -10px)';
+            }, 10);
+            
+            setTimeout(() => {
+                criticalMessage.style.opacity = '0';
+                criticalMessage.style.transform = 'translate(-50%, -30px)';
+                setTimeout(() => {
+                    document.body.removeChild(criticalMessage);
+                }, 500);
+            }, 1500);
         }
         
         const meritIncrease = isCritical ? 5 : 1;
@@ -709,6 +844,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // 增加功德
         meritCount += meritIncrease;
         meritCountElement.textContent = meritCount;
+        
+        // 更新进度条和等级
+        updateProgressAndLevel();
+        
+        // 检查成就
+        checkAchievements();
         
         // 显示功德弹出动画
         const meritText = document.createElement('div');
@@ -877,6 +1018,9 @@ document.addEventListener('DOMContentLoaded', () => {
             wishDisplay.innerHTML = `<i class="fas fa-heart text-pink-500"></i> <span class="font-medium">${translations[currentLang].yourWish}:</span> ${userWish}`;
             wishDisplayArea.appendChild(wishDisplay);
         }
+        
+        // 检查心愿成就
+        checkAchievements();
     }
     
     // 心愿DIY
@@ -1003,4 +1147,18 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(textarea);
         }
     });
+
+    // 初始化功能
+    updateProgressAndLevel();
+    
+    // 首次访问时显示点击提示，3秒后自动消失
+    setTimeout(() => {
+        const clickHint = document.querySelector('#wooden-fish .absolute');
+        if (clickHint) {
+            clickHint.style.opacity = '0';
+            setTimeout(() => {
+                clickHint.style.display = 'none';
+            }, 500);
+        }
+    }, 3000);
 }); 
