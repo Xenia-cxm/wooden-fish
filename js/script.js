@@ -599,11 +599,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 white-space: nowrap;
                 transform: translateY(-20px);
                 animation: floatUp 1.5s ease-out forwards;
+                -webkit-animation: floatUp 1.5s ease-out forwards;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                -webkit-font-smoothing: antialiased;
             }
             
             /* 暴击样式 */
             .critical-merit {
                 animation: criticalPulse 1.5s ease-out forwards;
+                -webkit-animation: criticalPulse 1.5s ease-out forwards;
                 transform: scale(1.2) translateY(-20px);
             }
             
@@ -615,6 +620,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 100% { transform: translateY(-80px); opacity: 0; }
             }
             
+            @-webkit-keyframes floatUp {
+                0% { -webkit-transform: translateY(0); opacity: 0; }
+                10% { opacity: 1; }
+                70% { opacity: 1; }
+                100% { -webkit-transform: translateY(-80px); opacity: 0; }
+            }
+            
             /* 暴击脉冲动画 */
             @keyframes criticalPulse {
                 0% { transform: scale(1) translateY(0); opacity: 0; }
@@ -624,22 +636,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 100% { transform: scale(1) translateY(-100px); opacity: 0; }
             }
             
+            @-webkit-keyframes criticalPulse {
+                0% { -webkit-transform: scale(1) translateY(0); opacity: 0; }
+                10% { -webkit-transform: scale(1.2) translateY(-10px); opacity: 1; }
+                20% { -webkit-transform: scale(1.1) translateY(-20px); }
+                70% { opacity: 1; }
+                100% { -webkit-transform: scale(1) translateY(-100px); opacity: 0; }
+            }
+            
             /* 光晕放大动画 */
             .merit-glow {
                 transition: opacity 0.8s, transform 0.8s;
+                -webkit-transition: opacity 0.8s, -webkit-transform 0.8s;
                 opacity: 1;
                 transform: scale(1);
+                -webkit-transform: scale(1);
             }
             
             /* 确保木鱼点击动画 */
             .wooden-fish.tapped {
                 transform: scale(0.95);
+                -webkit-transform: scale(0.95);
                 transition: transform 0.1s ease-out;
+                -webkit-transition: -webkit-transform 0.1s ease-out;
             }
             
             /* 连击提示样式 */
             .combo-hint {
                 animation: fadeInOut 1.3s ease-out forwards;
+                -webkit-animation: fadeInOut 1.3s ease-out forwards;
             }
             
             @keyframes fadeInOut {
@@ -647,6 +672,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 20% { opacity: 1; }
                 80% { opacity: 1; }
                 100% { opacity: 0; }
+            }
+            
+            @-webkit-keyframes fadeInOut {
+                0% { opacity: 0; }
+                20% { opacity: 1; }
+                80% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+            
+            /* 粒子动画 */
+            @keyframes particleFade {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.5); }
+            }
+            
+            @-webkit-keyframes particleFade {
+                0% { opacity: 1; -webkit-transform: scale(1); }
+                100% { opacity: 0; -webkit-transform: scale(0.5); }
             }
         `;
         
@@ -797,12 +840,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 criticalCooldown = false;
             }, 3000);
             
-            // 添加游戏化元素 - 暴击提示和特效增强
+            // 添加游戏化元素 - 暴击提示和特效增强 - 适应暗色主题
             const criticalMessage = document.createElement('div');
-            criticalMessage.className = 'fixed top-1/4 left-1/2 transform -translate-x-1/2 bg-amber-100 text-amber-800 px-8 py-4 rounded-xl shadow-xl z-50 font-bold text-xl';
+            criticalMessage.className = 'fixed top-1/4 left-1/2 transform -translate-x-1/2 bg-amber-900 text-amber-100 px-8 py-4 rounded-xl shadow-2xl z-50 font-bold text-xl';
             criticalMessage.textContent = currentLang === 'en' ? '✨ CRITICAL HIT! ✨' : '✨ 暴击！✨';
             criticalMessage.style.opacity = '0';
             criticalMessage.style.transition = 'opacity 0.3s, transform 0.5s';
+            criticalMessage.style.border = '2px solid #FF9D00';
+            criticalMessage.style.boxShadow = '0 0 20px rgba(255, 157, 0, 0.4)';
             document.body.appendChild(criticalMessage);
             
             setTimeout(() => {
@@ -863,8 +908,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 检查成就
         checkAchievements();
         
-        // 显示功德弹出动画 - 全新实现
+        // 显示功德动画
         showMeritAnimation(meritIncrease, isCritical, userWish);
+        
+        // 返回成功标志
+        return true;
     }
     
     // 全新的功德动画显示函数 - 单独实现，便于维护和调试
@@ -889,20 +937,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 meritText.classList.add('critical-merit');
             }
             
-            // 4. 设置内联样式 - 确保动画可见
+            // 4. 设置内联样式 - 确保动画可见，使用更适合暗色主题的颜色
             meritText.style.position = 'fixed';
             meritText.style.zIndex = '9999';
             meritText.style.pointerEvents = 'none';
             meritText.style.userSelect = 'none';
             meritText.style.fontWeight = 'bold';
-            meritText.style.textShadow = '0 1px 2px rgba(0,0,0,0.1)';
+            meritText.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
             
-            // 设置颜色和大小 - 暴击时更大更明显
-            meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
+            // 设置颜色和大小 - 暴击时更大更明显，调整为暗色主题颜色
+            meritText.style.color = isCritical ? '#FFB700' : '#F59E0B';
             meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
             
+            // 添加背景，提高在暗色主题下的可见度
+            meritText.style.backgroundColor = isCritical ? 'rgba(30, 27, 17, 0.8)' : 'rgba(30, 27, 17, 0.6)';
+            meritText.style.padding = '5px 12px';
+            meritText.style.borderRadius = '12px';
+            meritText.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+            meritText.style.border = isCritical ? '1px solid rgba(255, 183, 0, 0.5)' : 'none';
+            
             // 设置动画效果
-            meritText.style.transition = 'opacity 1.5s, transform 1.5s';
+            meritText.style.transition = 'all 1.2s ease-out';
             meritText.style.opacity = '0';
             meritText.style.transform = 'translateY(0)';
             
@@ -922,10 +977,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 meritText.style.textOverflow = 'ellipsis';
                 meritText.style.whiteSpace = 'nowrap';
                 
-                // 为心愿文本添加额外样式
+                // 为心愿文本添加额外样式 - 使用暗色主题颜色
                 const wishSpan = meritText.querySelector('.wish-text');
                 if (wishSpan) {
-                    wishSpan.style.color = '#4F46E5';
+                    wishSpan.style.color = '#A5B4FC'; // 淡紫色调，适合暗色主题
                     wishSpan.style.fontSize = '0.8em';
                 }
                 
@@ -942,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 7. 触发动画
             setTimeout(() => {
                 meritText.style.opacity = '1';
-                meritText.style.transform = 'translateY(-50px)';
+                meritText.style.transform = 'translateY(-60px)';
             }, 10);
             
             // 8. 动画结束后移除元素
@@ -957,7 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 500);
             }, 1200);
             
-            // 9. 暴击时添加额外粒子效果
+            // 9. 暴击时添加额外粒子效果 - 调整为暗色主题风格
             if (isCritical) {
                 // 添加光晕效果
                 const glow = document.createElement('div');
@@ -965,10 +1020,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 glow.style.position = 'fixed';
                 glow.style.left = `${x - 50}px`;
                 glow.style.top = `${y - 30}px`;
-                glow.style.width = '100px';
-                glow.style.height = '100px';
+                glow.style.width = '120px';
+                glow.style.height = '120px';
                 glow.style.borderRadius = '50%';
-                glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.6) 0%, rgba(255,107,0,0) 70%)';
+                glow.style.background = 'radial-gradient(circle, rgba(255,183,0,0.8) 0%, rgba(255,183,0,0) 70%)';
                 glow.style.zIndex = '9998';
                 glow.style.pointerEvents = 'none';
                 document.body.appendChild(glow);
@@ -985,10 +1040,53 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }, 800);
                 }, 200);
+                
+                // 添加粒子效果
+                for (let i = 0; i < 8; i++) {
+                    createParticle(x, y);
+                }
             }
         } catch (error) {
             console.error('创建功德动画失败:', error);
         }
+    }
+    
+    // 创建暴击粒子效果
+    function createParticle(x, y) {
+        const particle = document.createElement('div');
+        particle.style.position = 'fixed';
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.width = '8px';
+        particle.style.height = '8px';
+        particle.style.backgroundColor = `hsl(${Math.random() * 30 + 35}, 100%, 60%)`;
+        particle.style.borderRadius = '50%';
+        particle.style.zIndex = '9997';
+        particle.style.boxShadow = '0 0 6px rgba(255, 183, 0, 0.8)';
+        
+        // 随机方向和距离
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 60 + 40;
+        const destinationX = x + Math.cos(angle) * distance;
+        const destinationY = y + Math.sin(angle) * distance;
+        
+        // 设置动画
+        particle.style.transition = 'all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1)';
+        
+        document.body.appendChild(particle);
+        
+        // 触发动画
+        setTimeout(() => {
+            particle.style.transform = `translate(${destinationX - x}px, ${destinationY - y}px)`;
+            particle.style.opacity = '0';
+            
+            // 移除粒子
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    document.body.removeChild(particle);
+                }
+            }, 800);
+        }, 10);
     }
 
     // 显示连击提示
@@ -1016,28 +1114,31 @@ document.addEventListener('DOMContentLoaded', () => {
             comboHint.style.transform = 'translateY(-50%)';
         }
         
-        comboHint.style.color = '#6366F1';
+        // 更改为暗色主题配色
+        comboHint.style.color = '#A5B4FC';
         comboHint.style.fontSize = '1.25rem';
         comboHint.style.fontWeight = 'bold';
-        comboHint.style.padding = '5px 15px';
-        comboHint.style.borderRadius = '15px';
-        comboHint.style.backgroundColor = 'rgba(243, 244, 246, 0.85)';
-        comboHint.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        comboHint.style.padding = '8px 16px';
+        comboHint.style.borderRadius = '12px';
+        comboHint.style.backgroundColor = 'rgba(30, 30, 46, 0.85)';
+        comboHint.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.3)';
         comboHint.style.zIndex = '1000';
         comboHint.style.opacity = '0';
         comboHint.style.transition = 'opacity 0.3s';
+        comboHint.style.border = '1px solid rgba(165, 180, 252, 0.3)';
         
         // 根据进度改变颜色
         const progress = comboCount / tapThreshold;
         if (progress >= 0.8) {
-            comboHint.style.color = '#FF6B00';
-            comboHint.style.backgroundColor = 'rgba(255, 248, 223, 0.9)';
-            comboHint.style.borderLeft = '3px solid #FF6B00';
-            comboHint.style.borderRight = '3px solid #FF6B00';
+            comboHint.style.color = '#FFD700';
+            comboHint.style.backgroundColor = 'rgba(44, 27, 0, 0.9)';
+            comboHint.style.borderLeft = '3px solid #FF9D00';
+            comboHint.style.borderRight = '3px solid #FF9D00';
             comboHint.textContent = `${translations[currentLang].combo} x${comboCount} (${comboCount}/${tapThreshold}) ${translations[currentLang].criticalHitSoon}`;
         } else if (progress >= 0.5) {
             comboHint.style.color = '#F59E0B';
             comboHint.style.borderBottom = '2px solid #F59E0B';
+            comboHint.style.backgroundColor = 'rgba(37, 26, 0, 0.9)';
         }
         
         document.body.appendChild(comboHint);
@@ -1059,14 +1160,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // 更新心愿显示
     function updateWishDisplay() {
         const wishDisplayArea = document.getElementById('wish-display-area');
+        if (!wishDisplayArea) return;
+        
         wishDisplayArea.innerHTML = '';
         
         // 如果有心愿，显示它
         if (userWish) {
             const wishDisplay = document.createElement('div');
-            wishDisplay.className = 'wish-display bg-indigo-50 px-4 py-2 rounded-lg shadow-sm text-center mb-2';
-            wishDisplay.innerHTML = `<i class="fas fa-heart text-pink-500"></i> <span class="font-medium">${translations[currentLang].yourWish}:</span> ${userWish}`;
+            wishDisplay.className = 'flex items-center justify-center space-x-2 text-indigo-300';
+            wishDisplay.innerHTML = `
+                <i class="fas fa-heart text-pink-500"></i>
+                <span class="font-medium text-indigo-200">${translations[currentLang].yourWish}:</span>
+                <span class="text-amber-300 font-medium">${userWish}</span>
+            `;
             wishDisplayArea.appendChild(wishDisplay);
+        } else {
+            // 如果没有心愿，显示提示
+            const emptyWish = document.createElement('div');
+            emptyWish.className = 'text-gray-500 italic';
+            emptyWish.textContent = currentLang === 'en' ? 'Click "Customize Wish" to set your wish' : '点击"许愿"设置您的心愿';
+            wishDisplayArea.appendChild(emptyWish);
         }
         
         // 检查心愿成就
