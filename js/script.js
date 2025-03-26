@@ -354,10 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 防止触摸事件和点击事件重复触发的变量
-    let touchEventFired = false;
-    let touchEventTimer = null;
-
     // 敲击木鱼函数
     function tapWoodenFish() {
         // 获取当前时间
@@ -514,82 +510,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
     }
     
-    // 点击事件
-    woodenFish.addEventListener('click', function(e) {
-        // 如果是由触摸事件引起的，则不执行
-        if (touchEventFired) {
-            return;
-        }
-
-        e.preventDefault();
-        
-        // 添加波纹效果
+    // 创建添加波纹效果的函数
+    function createRippleEffect(element, x, y) {
         const ripple = document.createElement('div');
         ripple.className = 'ripple';
         
-        // 设置波纹的位置
-        const rect = woodenFish.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const rect = element.getBoundingClientRect();
         
-        ripple.style.left = `${x}px`;
-        ripple.style.top = `${y}px`;
+        ripple.style.left = `${x - rect.left}px`;
+        ripple.style.top = `${y - rect.top}px`;
         ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
         ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
         
-        woodenFish.appendChild(ripple);
+        element.appendChild(ripple);
         
         // 动画完成后移除波纹元素
         setTimeout(() => {
-            woodenFish.removeChild(ripple);
+            if (element.contains(ripple)) {
+                element.removeChild(ripple);
+            }
         }, 800);
+    }
+    
+    // 点击或触摸事件控制变量
+    let lastEventTime = 0;
+    const eventThreshold = 300; // 事件间隔阈值(毫秒)
+    
+    // 点击事件 - 仅用于非触摸设备
+    if (!isMobile) {
+        woodenFish.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 添加波纹效果
+            createRippleEffect(woodenFish, e.clientX, e.clientY);
+            
+            // 敲击木鱼
+            tapWoodenFish();
+        });
+    }
+    
+    // 触摸事件 - 用于所有设备，但在触摸设备上会阻止点击事件
+    woodenFish.addEventListener('touchstart', function(e) {
+        e.preventDefault(); // 阻止后续的鼠标事件
         
+        const now = Date.now();
+        
+        // 如果事件触发太快，忽略它
+        if (now - lastEventTime < eventThreshold) {
+            return;
+        }
+        
+        lastEventTime = now;
+        
+        // 添加波纹效果
+        const touch = e.touches[0];
+        createRippleEffect(woodenFish, touch.clientX, touch.clientY);
+        
+        // 敲击木鱼
         tapWoodenFish();
     });
     
-    // 触摸事件支持
-    woodenFish.addEventListener('touchstart', function(e) {
-        // 设置标志，表示触摸事件已触发
-        touchEventFired = true;
-        
-        // 添加波纹效果 (为触摸设备添加与点击相同的视觉反馈)
-        const rect = woodenFish.getBoundingClientRect();
-        const touchX = e.touches[0].clientX - rect.left;
-        const touchY = e.touches[0].clientY - rect.top;
-        
-        const ripple = document.createElement('div');
-        ripple.className = 'ripple';
-        ripple.style.left = `${touchX}px`;
-        ripple.style.top = `${touchY}px`;
-        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        
-        woodenFish.appendChild(ripple);
-        
-        // 动画完成后移除波纹元素
-        setTimeout(() => {
-            woodenFish.removeChild(ripple);
-        }, 800);
-        
-        // 清除之前的计时器
-        if (touchEventTimer) {
-            clearTimeout(touchEventTimer);
-        }
-        
-        // 调用敲击函数
-        tapWoodenFish();
-        
-        // 500毫秒后重置标志，这个时间应该足够click事件触发
-        touchEventTimer = setTimeout(() => {
-            touchEventFired = false;
-        }, 500);
-        
-    }, { passive: false });
+    // 阻止触摸事件后的点击事件
+    woodenFish.addEventListener('touchend', function(e) {
+        e.preventDefault();
+    });
     
     // 键盘空格事件
     document.addEventListener('keydown', (event) => {
         if (event.key === ' ' || event.code === 'Space') {
             event.preventDefault();
+            
+            const now = Date.now();
+            
+            // 如果事件触发太快，忽略它
+            if (now - lastEventTime < eventThreshold) {
+                return;
+            }
+            
+            lastEventTime = now;
+            
             tapWoodenFish();
         }
     });
