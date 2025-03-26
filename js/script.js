@@ -126,6 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('h1').textContent = translations[currentLang].title;
         document.querySelector('header p').textContent = translations[currentLang].subtitle;
         
+        // 更新敲击标题 - 直接使用专门的选择器，确保准确更新
+        const tapTitle = document.querySelector('.tap-title');
+        if (tapTitle) {
+            tapTitle.textContent = translations[currentLang].tapForMerit;
+        }
+        
         // 更新指令文本
         document.querySelector('.instruction').textContent = translations[currentLang].tapInstructions;
         
@@ -271,173 +277,106 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     preloadAudio();
-
-    // 功德计数器拖动功能
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
     
-    // 初始化计数器位置（如果有保存的位置）
-    const savedPosition = localStorage.getItem('meritCounterPosition');
-    if (savedPosition) {
-        try {
-            const position = JSON.parse(savedPosition);
-            meritCounter.style.position = 'absolute';
-            meritCounter.style.left = position.left + 'px';
-            meritCounter.style.top = position.top + 'px';
-        } catch (e) {
-            console.error('无法恢复位置:', e);
-        }
-    }
-    
-    // 鼠标拖动事件
-    meritCounter.addEventListener('mousedown', initDrag);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', stopDrag);
-    
-    // 触摸拖动事件
-    meritCounter.addEventListener('touchstart', initDrag, { passive: false });
-    document.addEventListener('touchmove', drag, { passive: false });
-    document.addEventListener('touchend', stopDrag);
-    
-    function initDrag(e) {
-        // 只有点击计数器本身时才能拖动
-        if (e.target === meritCounter || meritCounter.contains(e.target)) {
-            e.preventDefault();
-            isDragging = true;
-            
-            // 设置相对定位如果还不是
-            if (getComputedStyle(meritCounter).position !== 'absolute') {
-                const rect = meritCounter.getBoundingClientRect();
-                meritCounter.style.position = 'absolute';
-                meritCounter.style.left = rect.left + 'px';
-                meritCounter.style.top = rect.top + 'px';
-            }
-            
-            // 记录开始坐标
-            if (e.type === 'touchstart') {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            } else {
-                startX = e.clientX;
-                startY = e.clientY;
-            }
-            
-            startLeft = parseInt(getComputedStyle(meritCounter).left) || 0;
-            startTop = parseInt(getComputedStyle(meritCounter).top) || 0;
-            
-            // 添加激活样式
-            meritCounter.classList.add('dragging');
-        }
-    }
-    
-    function drag(e) {
-        if (!isDragging) return;
-        e.preventDefault();
-        
-        let currentX, currentY;
-        if (e.type === 'touchmove') {
-            currentX = e.touches[0].clientX;
-            currentY = e.touches[0].clientY;
-        } else {
-            currentX = e.clientX;
-            currentY = e.clientY;
-        }
-        
-        // 计算新位置
-        const newLeft = startLeft + (currentX - startX);
-        const newTop = startTop + (currentY - startY);
-        
-        // 限制在可视区域内
-        const mainSection = document.querySelector('main');
-        
-        // 应用新位置
-        meritCounter.style.left = newLeft + 'px';
-        meritCounter.style.top = newTop + 'px';
-        
-        // 保存位置
-        localStorage.setItem('meritCounterPosition', JSON.stringify({
-            left: newLeft,
-            top: newTop
-        }));
-    }
-    
-    function stopDrag() {
-        if (isDragging) {
-            isDragging = false;
-            meritCounter.classList.remove('dragging');
-        }
-    }
+    // 创建一个标记，用于防止事件重复触发
+    let isTapping = false;
 
     // 点击或触摸事件控制变量
     let lastEventTime = 0;
-    const eventThreshold = 500; // 事件间隔阈值(毫秒)，增加阈值防止重复触发
-    let isProcessingTap = false; // 新增标志，表示正在处理敲击事件
+    const eventThreshold = 500; // 事件间隔阈值(毫秒)
     
-    // 点击事件 - 仅用于非触摸设备
-    if (!isMobile) {
-        woodenFish.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const now = Date.now();
-            
-            // 如果事件触发太快或正在处理中，忽略它
-            if (now - lastEventTime < eventThreshold || isProcessingTap) {
-                return;
+    // 完全清除之前的所有事件监听器
+    woodenFish.removeEventListener('click', tapWoodenFish);
+    woodenFish.removeEventListener('touchstart', tapWoodenFish);
+    woodenFish.removeEventListener('touchend', () => {});
+    woodenFish.removeEventListener('touchmove', () => {});
+    
+    // 创建添加波纹效果的函数
+    function createRippleEffect(element, x, y) {
+        const ripple = document.createElement('div');
+        ripple.className = 'ripple';
+        
+        const rect = element.getBoundingClientRect();
+        
+        ripple.style.left = `${x - rect.left}px`;
+        ripple.style.top = `${y - rect.top}px`;
+        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
+        
+        element.appendChild(ripple);
+        
+        // 动画完成后移除波纹元素
+        setTimeout(() => {
+            if (element.contains(ripple)) {
+                element.removeChild(ripple);
             }
-            
-            lastEventTime = now;
-            isProcessingTap = true;
-            
-            // 添加波纹效果
-            createRippleEffect(woodenFish, e.clientX, e.clientY);
-            
-            // 敲击木鱼
-            tapWoodenFish();
-            
-            // 设置延时，防止短时间内重复触发
-            setTimeout(() => {
-                isProcessingTap = false;
-            }, 100);
-        });
+        }, 800);
     }
     
-    // 触摸事件 - 用于所有设备，但在触摸设备上会阻止点击事件
-    woodenFish.addEventListener('touchstart', function(e) {
-        e.preventDefault(); // 阻止后续的鼠标事件
-        e.stopPropagation(); // 阻止事件冒泡
+    // 统一的事件处理函数
+    function handleTap(e) {
+        e.preventDefault();
+        
+        // 阻止事件冒泡
+        e.stopPropagation();
         
         const now = Date.now();
         
         // 如果事件触发太快或正在处理中，忽略它
-        if (now - lastEventTime < eventThreshold || isProcessingTap) {
+        if (now - lastEventTime < eventThreshold || isTapping) {
             return;
         }
         
+        // 更新时间和状态
         lastEventTime = now;
-        isProcessingTap = true;
+        isTapping = true;
         
         // 添加波纹效果
-        const touch = e.touches[0];
-        createRippleEffect(woodenFish, touch.clientX, touch.clientY);
+        let clientX, clientY;
+        if (e.type === 'touchstart') {
+            const touch = e.touches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        createRippleEffect(woodenFish, clientX, clientY);
         
         // 敲击木鱼
         tapWoodenFish();
         
-        // 设置延时，防止短时间内重复触发
+        // 设置延时，允许下一次点击
         setTimeout(() => {
-            isProcessingTap = false;
+            isTapping = false;
         }, 100);
-    }, { passive: false });
+    }
     
-    // 阻止触摸事件后的点击事件
-    woodenFish.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }, { passive: false });
-    
-    woodenFish.addEventListener('touchmove', function(e) {
-        e.preventDefault(); // 防止滑动时意外触发
-    }, { passive: false });
+    // 根据设备类型只绑定一种事件
+    if (isMobile) {
+        // 在移动设备上，只使用触摸事件
+        woodenFish.addEventListener('touchstart', handleTap, { passive: false });
+        
+        // 阻止所有其他相关事件
+        woodenFish.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+        
+        woodenFish.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+        
+        // 阻止点击事件
+        woodenFish.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    } else {
+        // 在桌面设备上，只使用鼠标事件
+        woodenFish.addEventListener('click', handleTap);
+    }
     
     // 键盘空格事件
     document.addEventListener('keydown', (event) => {
@@ -447,22 +386,264 @@ document.addEventListener('DOMContentLoaded', () => {
             const now = Date.now();
             
             // 如果事件触发太快或正在处理中，忽略它
-            if (now - lastEventTime < eventThreshold || isProcessingTap) {
+            if (now - lastEventTime < eventThreshold || isTapping) {
                 return;
             }
             
             lastEventTime = now;
-            isProcessingTap = true;
+            isTapping = true;
             
             tapWoodenFish();
             
-            // 设置延时，防止短时间内重复触发
+            // 设置延时，允许下一次点击
             setTimeout(() => {
-                isProcessingTap = false;
+                isTapping = false;
             }, 100);
         }
     });
-    
+
+    // 敲击木鱼函数
+    function tapWoodenFish() {
+        // 获取当前时间
+        const currentTime = Date.now();
+        
+        // 判断是否为快速点击（点击间隔小于阈值）
+        const isQuickTap = (currentTime - lastTapTime) < tapInterval;
+        lastTapTime = currentTime;
+        
+        // 根据点击速度更新连续点击计数
+        if (isQuickTap) {
+            consecutiveTaps++;
+            
+            // 每次快速点击时都显示连击提示
+            if (consecutiveTaps > 1) {
+                showComboHint(consecutiveTaps);
+            }
+        } else {
+            // 如果点击间隔过长，重置连击计数
+            consecutiveTaps = 1;
+        }
+        
+        // 判断是否触发暴击（连续快速点击达到阈值且不在冷却状态）
+        const isCritical = consecutiveTaps >= tapThreshold && !criticalCooldown;
+        
+        // 如果触发暴击，重置连击计数并设置冷却时间
+        if (isCritical) {
+            consecutiveTaps = 0;
+            criticalCooldown = true;
+            
+            // 重新设置随机目标连击数
+            tapThreshold = Math.floor(Math.random() * 13) + 8;
+            
+            // 暴击后3秒冷却时间
+            setTimeout(() => {
+                criticalCooldown = false;
+            }, 3000);
+        }
+        
+        const meritIncrease = isCritical ? 5 : 1;
+        
+        // 播放动画
+        woodenFish.classList.add('tapped');
+        if (isCritical) {
+            woodenFish.classList.add('critical');
+            setTimeout(() => {
+                woodenFish.classList.remove('critical');
+            }, 500);
+        }
+        setTimeout(() => {
+            woodenFish.classList.remove('tapped');
+        }, 100);
+        
+        // 完全重写音频播放逻辑
+        (function playSound() {
+            try {
+                // 重置音频状态
+                tapSound.pause();
+                tapSound.currentTime = 0;
+                
+                // 播放音频
+                let played = false;
+                const playPromise = tapSound.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            played = true;
+                        })
+                        .catch(error => {
+                            console.log('无法播放音效:', error);
+                            // 如果未能播放，尝试创建新的音频对象播放
+                            if (!played) {
+                                const newSound = new Audio('assets/wooden-fish-sound.mp3');
+                                newSound.play().catch(e => console.log('备用音频播放失败:', e));
+                            }
+                        });
+                }
+            } catch (error) {
+                console.log('音频播放错误:', error);
+            }
+        })();
+        
+        // 增加功德
+        meritCount += meritIncrease;
+        meritCountElement.textContent = meritCount;
+        
+        // 显示功德弹出动画
+        const meritText = document.createElement('div');
+        // 根据是否有心愿显示不同的文本
+        if (userWish) {
+            meritText.textContent = `${userWish} +${meritIncrease}`;
+            meritText.style.maxWidth = '200px';
+            meritText.style.overflow = 'hidden';
+            meritText.style.textOverflow = 'ellipsis';
+            meritText.style.whiteSpace = 'nowrap';
+        } else {
+            meritText.textContent = `+${meritIncrease}`;
+        }
+        meritText.classList.add('merit-animation');
+        
+        // 暴击时添加特殊样式
+        if (isCritical) {
+            meritText.classList.add('critical-hit');
+        }
+        
+        // 随机位置 - 在木鱼上方
+        const rect = woodenFish.getBoundingClientRect();
+        const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
+        const y = rect.top + rect.height/2;
+        
+        meritText.style.position = 'fixed';
+        meritText.style.left = `${x}px`;
+        meritText.style.top = `${y}px`;
+        meritText.style.zIndex = '1000';
+        meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
+        meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
+        meritText.style.fontWeight = 'bold';
+        meritText.style.pointerEvents = 'none';
+        
+        document.body.appendChild(meritText);
+        
+        // 暴击时添加额外的视觉效果
+        if (isCritical) {
+            // 添加光晕效果
+            const glow = document.createElement('div');
+            glow.className = 'critical-glow';
+            glow.style.position = 'fixed';
+            glow.style.left = `${rect.left + rect.width/2 - 100}px`;
+            glow.style.top = `${rect.top + rect.height/2 - 100}px`;
+            glow.style.width = '200px';
+            glow.style.height = '200px';
+            glow.style.borderRadius = '50%';
+            glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.5) 0%, rgba(255,107,0,0) 70%)';
+            glow.style.zIndex = '10';
+            glow.style.pointerEvents = 'none';
+            document.body.appendChild(glow);
+            
+            // 创建粒子效果
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'critical-particle';
+                particle.style.position = 'fixed';
+                particle.style.left = `${rect.left + rect.width/2}px`;
+                particle.style.top = `${rect.top + rect.height/2}px`;
+                particle.style.width = '10px';
+                particle.style.height = '10px';
+                particle.style.borderRadius = '50%';
+                particle.style.backgroundColor = '#FF6B00';
+                particle.style.zIndex = '10';
+                particle.style.pointerEvents = 'none';
+                
+                // 使用style设置动画变量
+                const rotation = i * 30;
+                particle.style.setProperty('--rotate', `${rotation}deg`);
+                particle.style.opacity = '0';
+                particle.style.animation = 'particle-burst 0.8s ease-out forwards';
+                document.body.appendChild(particle);
+                
+                // 移除粒子
+                setTimeout(() => {
+                    document.body.removeChild(particle);
+                }, 800);
+            }
+            
+            // 移除光晕
+            setTimeout(() => {
+                document.body.removeChild(glow);
+            }, 800);
+        }
+        
+        // 删除动画元素
+        setTimeout(() => {
+            document.body.removeChild(meritText);
+        }, 1500);
+    }
+
+    // 显示连击提示
+    function showComboHint(comboCount) {
+        const comboHint = document.createElement('div');
+        comboHint.textContent = `${translations[currentLang].combo} x${comboCount} (${comboCount}/${tapThreshold})`;
+        comboHint.className = 'combo-hint';
+        
+        // 获取木鱼位置
+        const fishRect = woodenFish.getBoundingClientRect();
+        
+        // 样式设置
+        comboHint.style.position = 'fixed';
+        
+        // 根据设备类型调整位置
+        if (isMobile) {
+            // 移动设备：放在木鱼下方
+            comboHint.style.left = `${fishRect.left + fishRect.width/2}px`;
+            comboHint.style.top = `${fishRect.bottom + 20}px`;
+            comboHint.style.transform = 'translateX(-50%)';
+        } else {
+            // 桌面设备：放在木鱼右侧靠近处
+            comboHint.style.left = `${fishRect.right + 20}px`;
+            comboHint.style.top = `${fishRect.top + fishRect.height/2}px`;
+            comboHint.style.transform = 'translateY(-50%)';
+        }
+        
+        comboHint.style.color = '#6366F1';
+        comboHint.style.fontSize = '1.25rem';
+        comboHint.style.fontWeight = 'bold';
+        comboHint.style.padding = '5px 15px';
+        comboHint.style.borderRadius = '15px';
+        comboHint.style.backgroundColor = 'rgba(243, 244, 246, 0.85)';
+        comboHint.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        comboHint.style.zIndex = '1000';
+        comboHint.style.opacity = '0';
+        comboHint.style.transition = 'opacity 0.3s';
+        
+        // 根据进度改变颜色
+        const progress = comboCount / tapThreshold;
+        if (progress >= 0.8) {
+            comboHint.style.color = '#FF6B00';
+            comboHint.style.backgroundColor = 'rgba(255, 248, 223, 0.9)';
+            comboHint.style.borderLeft = '3px solid #FF6B00';
+            comboHint.style.borderRight = '3px solid #FF6B00';
+            comboHint.textContent = `${translations[currentLang].combo} x${comboCount} (${comboCount}/${tapThreshold}) ${translations[currentLang].criticalHitSoon}`;
+        } else if (progress >= 0.5) {
+            comboHint.style.color = '#F59E0B';
+            comboHint.style.borderBottom = '2px solid #F59E0B';
+        }
+        
+        document.body.appendChild(comboHint);
+        
+        // 淡入效果
+        setTimeout(() => {
+            comboHint.style.opacity = '1';
+            
+            // 淡出并移除效果
+            setTimeout(() => {
+                comboHint.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(comboHint);
+                }, 300);
+            }, 1000);
+        }, 10);
+    }
+
     // 更新心愿显示
     function updateWishDisplay() {
         const wishDisplayArea = document.getElementById('wish-display-area');
@@ -601,254 +782,4 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(textarea);
         }
     });
-    
-    // 显示连击提示
-    function showComboHint(comboCount) {
-        const comboHint = document.createElement('div');
-        comboHint.textContent = `${translations[currentLang].combo} x${comboCount} (${comboCount}/${tapThreshold})`;
-        comboHint.className = 'combo-hint';
-        
-        // 获取木鱼位置
-        const fishRect = woodenFish.getBoundingClientRect();
-        
-        // 样式设置
-        comboHint.style.position = 'fixed';
-        
-        // 根据设备类型调整位置
-        if (isMobile) {
-            // 移动设备：放在木鱼下方
-            comboHint.style.left = `${fishRect.left + fishRect.width/2}px`;
-            comboHint.style.top = `${fishRect.bottom + 20}px`;
-            comboHint.style.transform = 'translateX(-50%)';
-        } else {
-            // 桌面设备：放在木鱼右侧靠近处
-            comboHint.style.left = `${fishRect.right + 20}px`;
-            comboHint.style.top = `${fishRect.top + fishRect.height/2}px`;
-            comboHint.style.transform = 'translateY(-50%)';
-        }
-        
-        comboHint.style.color = '#6366F1';
-        comboHint.style.fontSize = '1.25rem';
-        comboHint.style.fontWeight = 'bold';
-        comboHint.style.padding = '5px 15px';
-        comboHint.style.borderRadius = '15px';
-        comboHint.style.backgroundColor = 'rgba(243, 244, 246, 0.85)';
-        comboHint.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
-        comboHint.style.zIndex = '1000';
-        comboHint.style.opacity = '0';
-        comboHint.style.transition = 'opacity 0.3s';
-        
-        // 根据进度改变颜色
-        const progress = comboCount / tapThreshold;
-        if (progress >= 0.8) {
-            comboHint.style.color = '#FF6B00';
-            comboHint.style.backgroundColor = 'rgba(255, 248, 223, 0.9)';
-            comboHint.style.borderLeft = '3px solid #FF6B00';
-            comboHint.style.borderRight = '3px solid #FF6B00';
-            comboHint.textContent = `${translations[currentLang].combo} x${comboCount} (${comboCount}/${tapThreshold}) ${translations[currentLang].criticalHitSoon}`;
-        } else if (progress >= 0.5) {
-            comboHint.style.color = '#F59E0B';
-            comboHint.style.borderBottom = '2px solid #F59E0B';
-        }
-        
-        document.body.appendChild(comboHint);
-        
-        // 淡入效果
-        setTimeout(() => {
-            comboHint.style.opacity = '1';
-            
-            // 淡出并移除效果
-            setTimeout(() => {
-                comboHint.style.opacity = '0';
-                setTimeout(() => {
-                    document.body.removeChild(comboHint);
-                }, 300);
-            }, 1000);
-        }, 10);
-    }
-
-    // 创建添加波纹效果的函数
-    function createRippleEffect(element, x, y) {
-        const ripple = document.createElement('div');
-        ripple.className = 'ripple';
-        
-        const rect = element.getBoundingClientRect();
-        
-        ripple.style.left = `${x - rect.left}px`;
-        ripple.style.top = `${y - rect.top}px`;
-        ripple.style.width = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        ripple.style.height = `${Math.max(rect.width, rect.height) * 0.5}px`;
-        
-        element.appendChild(ripple);
-        
-        // 动画完成后移除波纹元素
-        setTimeout(() => {
-            if (element.contains(ripple)) {
-                element.removeChild(ripple);
-            }
-        }, 800);
-    }
-
-    // 敲击木鱼函数
-    function tapWoodenFish() {
-        // 获取当前时间
-        const currentTime = Date.now();
-        
-        // 判断是否为快速点击（点击间隔小于阈值）
-        const isQuickTap = (currentTime - lastTapTime) < tapInterval;
-        lastTapTime = currentTime;
-        
-        // 根据点击速度更新连续点击计数
-        if (isQuickTap) {
-            consecutiveTaps++;
-            
-            // 每次快速点击时都显示连击提示
-            if (consecutiveTaps > 1) {
-                showComboHint(consecutiveTaps);
-            }
-        } else {
-            // 如果点击间隔过长，重置连击计数
-            consecutiveTaps = 1;
-        }
-        
-        // 判断是否触发暴击（连续快速点击达到阈值且不在冷却状态）
-        const isCritical = consecutiveTaps >= tapThreshold && !criticalCooldown;
-        
-        // 如果触发暴击，重置连击计数并设置冷却时间
-        if (isCritical) {
-            consecutiveTaps = 0;
-            criticalCooldown = true;
-            
-            // 重新设置随机目标连击数
-            tapThreshold = Math.floor(Math.random() * 13) + 8;
-            
-            // 暴击后3秒冷却时间
-            setTimeout(() => {
-                criticalCooldown = false;
-            }, 3000);
-        }
-        
-        const meritIncrease = isCritical ? 5 : 1;
-        
-        // 播放动画
-        woodenFish.classList.add('tapped');
-        if (isCritical) {
-            woodenFish.classList.add('critical');
-            setTimeout(() => {
-                woodenFish.classList.remove('critical');
-            }, 500);
-        }
-        setTimeout(() => {
-            woodenFish.classList.remove('tapped');
-        }, 100);
-        
-        // 改进音频播放逻辑，防止重复播放
-        try {
-            // 总是重置并使用主音频实例
-            tapSound.pause();
-            tapSound.currentTime = 0;
-            const playPromise = tapSound.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.catch(e => {
-                    console.log('无法播放音效:', e);
-                });
-            }
-        } catch (e) {
-            console.log('音频播放错误:', e);
-        }
-        
-        // 增加功德
-        meritCount += meritIncrease;
-        meritCountElement.textContent = meritCount;
-        
-        // 显示功德弹出动画
-        const meritText = document.createElement('div');
-        // 根据是否有心愿显示不同的文本
-        if (userWish) {
-            meritText.textContent = `${userWish} +${meritIncrease}`;
-            meritText.style.maxWidth = '200px';
-            meritText.style.overflow = 'hidden';
-            meritText.style.textOverflow = 'ellipsis';
-            meritText.style.whiteSpace = 'nowrap';
-        } else {
-            meritText.textContent = `+${meritIncrease}`;
-        }
-        meritText.classList.add('merit-animation');
-        
-        // 暴击时添加特殊样式
-        if (isCritical) {
-            meritText.classList.add('critical-hit');
-        }
-        
-        // 随机位置 - 在木鱼上方
-        const rect = woodenFish.getBoundingClientRect();
-        const x = rect.left + rect.width/2 + (Math.random() * 60 - 30);
-        const y = rect.top + rect.height/2;
-        
-        meritText.style.position = 'fixed';
-        meritText.style.left = `${x}px`;
-        meritText.style.top = `${y}px`;
-        meritText.style.zIndex = '1000';
-        meritText.style.color = isCritical ? '#FF6B00' : '#F59E0B';
-        meritText.style.fontSize = isCritical ? '2.5rem' : '1.5rem';
-        meritText.style.fontWeight = 'bold';
-        meritText.style.pointerEvents = 'none';
-        
-        document.body.appendChild(meritText);
-        
-        // 暴击时添加额外的视觉效果
-        if (isCritical) {
-            // 添加光晕效果
-            const glow = document.createElement('div');
-            glow.className = 'critical-glow';
-            glow.style.position = 'fixed';
-            glow.style.left = `${rect.left + rect.width/2 - 100}px`;
-            glow.style.top = `${rect.top + rect.height/2 - 100}px`;
-            glow.style.width = '200px';
-            glow.style.height = '200px';
-            glow.style.borderRadius = '50%';
-            glow.style.background = 'radial-gradient(circle, rgba(255,107,0,0.5) 0%, rgba(255,107,0,0) 70%)';
-            glow.style.zIndex = '10';
-            glow.style.pointerEvents = 'none';
-            document.body.appendChild(glow);
-            
-            // 创建粒子效果
-            for (let i = 0; i < 12; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'critical-particle';
-                particle.style.position = 'fixed';
-                particle.style.left = `${rect.left + rect.width/2}px`;
-                particle.style.top = `${rect.top + rect.height/2}px`;
-                particle.style.width = '10px';
-                particle.style.height = '10px';
-                particle.style.borderRadius = '50%';
-                particle.style.backgroundColor = '#FF6B00';
-                particle.style.zIndex = '10';
-                particle.style.pointerEvents = 'none';
-                
-                // 使用style设置动画变量
-                const rotation = i * 30;
-                particle.style.setProperty('--rotate', `${rotation}deg`);
-                particle.style.opacity = '0';
-                particle.style.animation = 'particle-burst 0.8s ease-out forwards';
-                document.body.appendChild(particle);
-                
-                // 移除粒子
-                setTimeout(() => {
-                    document.body.removeChild(particle);
-                }, 800);
-            }
-            
-            // 移除光晕
-            setTimeout(() => {
-                document.body.removeChild(glow);
-            }, 800);
-        }
-        
-        // 删除动画元素
-        setTimeout(() => {
-            document.body.removeChild(meritText);
-        }, 1500);
-    }
 }); 
