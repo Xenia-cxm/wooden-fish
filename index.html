@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6366F1">
+    <meta name="description" content="Digital Wooden Fish - Tap the wooden fish to accumulate merit and find digital zen. A relaxing and mindful clicking game inspired by Buddhist traditions.">
+    <title>Digital Wooden Fish | Mindful Clicking Game</title>
+    <link rel="canonical" href="https://digitalwoodenfish.com" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366F1', // Indigo
+                        secondary: '#F59E0B', // Amber
+                        accent: '#10B981', // Emerald
+                        light: '#F3F4F6', // Gray-100
+                        dark: '#1F2937', // Gray-800
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom cursor definition */
+        :root {
+            --hammer-cursor: url('assets/hammer-SCD8s.cur'), pointer;
+        }
+        body {
+            cursor: default;
+        }
+        button, a {
+            cursor: pointer;
+        }
+        #wooden-fish {
+            cursor: var(--hammer-cursor) !important;
+        }
+        
+        /* Animation for merit popup */
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+        .merit-animation {
+            animation: float-up 1.5s ease-out forwards;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            background-color: rgba(255, 251, 235, 0.8);
+            padding: 2px 10px;
+            border-radius: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        /* Wooden fish tap animation */
+        @keyframes tap-effect {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        .wooden-fish.tapped img {
+            animation: tap-effect 0.3s ease-out;
+        }
+        
+        /* Beautiful ripple effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 183, 77, 0.4);
+            transform: scale(0);
+            animation: ripple-effect 0.8s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-effect {
+            0% { transform: scale(0); opacity: 0.7; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        
+        /* 拖动相关样式 */
+        .dragging {
+            opacity: 0.8;
+            box-shadow: 0 0 15px rgba(247, 175, 44, 0.6) !important;
+            z-index: 100;
+        }
+        
+        #merit-counter {
+            z-index: 10;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        #merit-counter:hover {
+            transform: scale(1.05);
+        }
+        
+        #merit-counter.dragging:hover {
+            transform: scale(1.05) rotate(2deg);
+        }
+        
+        /* 暴击效果相关样式 */
+        @keyframes critical-flash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.5); }
+            100% { filter: brightness(1); }
+        }
+        
+        .wooden-fish.critical img {
+            filter: brightness(1.3);
+            animation: critical-flash 0.5s ease-out;
+        }
+        
+        .critical-hit {
+            animation: critical-animation 1.5s ease-out forwards !important;
+            text-shadow: 0 0 15px rgba(255, 107, 0, 0.8) !important;
+            background-color: rgba(255, 248, 223, 0.9) !important;
+            border: 2px solid rgba(255, 107, 0, 0.5) !important;
+        }
+        
+        @keyframes critical-animation {
+            0% { transform: scale(0.5); opacity: 0; }
+            10% { transform: scale(1.2); opacity: 1; }
+            20% { transform: scale(1); opacity: 1; }
+            100% { transform: translateY(-150px) scale(0.8); opacity: 0; }
+        }
+        
+        @keyframes particle-burst {
+            0% { opacity: 1; transform: rotate(var(--rotate)) translateY(0); }
+            100% { opacity: 0; transform: rotate(var(--rotate)) translateY(-80px); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-12">
+            <div class="flex justify-end mb-2">
+                <button id="language-toggle" class="text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-1 px-3 rounded-full transition-colors">
+                    <span class="lang-en">中文</span>
+                    <span class="lang-zh" style="display:none">English</span>
+                </button>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold text-indigo-800 mb-4">Digital Wooden Fish</h1>
+            <p class="text-xl text-indigo-600 italic">Find digital zen through mindful tapping</p>
+        </header>
+
+        <main class="relative">
+            <section class="bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-12">
+                <h2 class="text-2xl font-bold text-indigo-700 mb-6 text-center">Tap for Merit</h2>
+                
+                <div class="flex flex-col items-center">
+                    <div id="wooden-fish" class="wooden-fish hover:scale-105 transition-transform duration-300 cursor-pointer mb-6 relative group">
+                        <div class="absolute inset-0 bg-amber-300 rounded-full opacity-0 group-hover:opacity-20 group-active:opacity-40 transition-opacity duration-300 transform scale-110"></div>
+                        <img src="assets/wooden-fish.png" alt="Wooden Fish" class="w-48 md:w-64 mx-auto drop-shadow-lg">
+                    </div>
+                    
+                    <!-- 功德计数器，可拖动 -->
+                    <div id="merit-counter" class="merit-count flex flex-col items-center bg-amber-50 bg-opacity-80 backdrop-blur-sm px-5 py-3 rounded-full shadow-lg transform transition-all duration-300 hover:shadow-xl cursor-move mb-4 relative border-2 border-amber-200 hover:border-amber-300" draggable="true">
+                        <div class="absolute -top-6 right-0 text-xs text-red-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <i class="fas fa-arrows-alt mr-1"></i>Draggable
+                        </div>
+                        <span id="merit-count" class="text-4xl md:text-5xl font-bold text-amber-500 drop-shadow-sm">0</span>
+                        <span class="merit-label text-lg text-amber-600">Merit</span>
+                    </div>
+                    
+                    <div class="instruction text-gray-700 text-center mb-3 bg-amber-50 px-4 py-2 rounded-lg shadow-sm">
+                        Press Spacebar or tap to accumulate merit
+                    </div>
+                    
+                    <!-- 用户心愿区域放在这里 -->
+                    <div id="wish-display-area" class="mb-3">
+                        <!-- 通过JavaScript动态插入 -->
+                    </div>
+                    
+                    <!-- 将"Customize Wish"按钮移到这里 -->
+                    <button id="wish-diy" class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-2 px-5 rounded-full shadow-md transition-all hover:shadow-lg flex items-center gap-2 mb-4">
+                        <i class="fas fa-heart"></i> Customize Wish
+                    </button>
+                </div>
+            </section>
+            
+            <section class="bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-12">
+                <h2 class="text-2xl font-bold text-indigo-700 mb-6">About Digital Wooden Fish</h2>
+                <div class="prose prose-indigo max-w-none">
+                    <p class="mb-4">The Digital Wooden Fish is inspired by the Buddhist tradition of wooden fish drums used during chanting and meditation. In many Asian cultures, tapping on a wooden fish is believed to accumulate merit and bring good fortune.</p>
+                    
+                    <p class="mb-4">Our digital version brings this mindful practice to your screen, offering a moment of calm in your busy day. Each tap represents a moment of mindfulness and presence.</p>
+                    
+                    <h3 class="text-xl font-semibold text-indigo-600 mt-6 mb-3">Eastern &amp; Western Cultural Perspectives</h3>
+                    
+                    <p class="mb-4">In Eastern Buddhist tradition, the wooden fish (木鱼, mù yú) symbolizes wakeful vigilance. Fish never close their eyes, representing constant awareness. The rhythmic tapping serves as a way to accumulate merit (功德, gōng dé) – positive spiritual energy that contributes to one's karma and future well-being.</p>
+                    
+                    <p class="mb-4">For Western audiences, this practice can be compared to several familiar concepts:</p>
+                    
+                    <ul class="list-disc pl-6 mb-4 space-y-2">
+                        <li><span class="font-medium">Similar to prayer beads or rosaries</span> in Christianity, where repetitive prayers accumulate spiritual benefits</li>
+                        <li><span class="font-medium">Comparable to mindfulness practices</span> in Western psychology, promoting present-moment awareness</li>
+                        <li><span class="font-medium">Like digital gratitude journals</span> that help cultivate appreciation and positive mental states</li>
+                        <li><span class="font-medium">Akin to meditation apps</span> that offer moments of pause and reflection in daily life</li>
+                    </ul>
+                    
+                    <p>While Western traditions often emphasize personal salvation or individual well-being, the Eastern concept of merit focuses on both personal spiritual growth and benefiting others. By tapping the wooden fish, you participate in a centuries-old tradition reimagined for the digital age – bringing together Eastern spiritual practices with contemporary Western mindfulness approaches.</p>
+                </div>
+            </section>
+            
+            <section class="bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-12">
+                <h2 class="text-2xl font-bold text-indigo-700 mb-6">How to Use</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-indigo-50 p-4 rounded-lg text-center">
+                        <div class="text-4xl text-indigo-500 mb-2"><i class="fas fa-hand-pointer"></i></div>
+                        <h3 class="font-semibold mb-2">Tap the Fish</h3>
+                        <p class="text-gray-700">Click on the wooden fish or press spacebar to tap</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg text-center">
+                        <div class="text-4xl text-indigo-500 mb-2"><i class="fas fa-heart"></i></div>
+                        <h3 class="font-semibold mb-2">Make a Wish</h3>
+                        <p class="text-gray-700">Customize your wishes and intentions</p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg text-center">
+                        <div class="text-4xl text-indigo-500 mb-2"><i class="fas fa-share-alt"></i></div>
+                        <h3 class="font-semibold mb-2">Share</h3>
+                        <p class="text-gray-700">Share your merit count with friends</p>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="controls flex justify-center mb-12">
+                <div class="flex items-center gap-3">
+                    <button id="share-btn" class="share-btn bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-full flex items-center gap-2 transition-colors">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                    <div class="share-count bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-medium">0</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="flex justify-between items-center mt-12 border-t border-indigo-200 pt-6">
+            <p class="text-indigo-600">&copy; 2023 Digital Wooden Fish</p>
+        </footer>
+    </div>
+
+    <div id="merit-popup" class="merit-popup absolute pointer-events-none text-2xl font-bold text-amber-500"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html> 

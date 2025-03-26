@@ -1,0 +1,337 @@
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #d4a017;
+    --text-color: #333;
+    --bg-color: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --container-bg: rgba(255, 255, 255, 0.9);
+    --button-bg: #f0f0f0;
+    --button-hover: #e0e0e0;
+    --share-button-bg: #4caf50;
+    --share-button-hover: #45a049;
+    --vip-button-bg: #ffd700;
+    --vip-button-hover: #ffcc00;
+}
+
+body {
+    font-family: 'Ma Shan Zheng', cursive, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+    padding: 2rem;
+    background-color: var(--container-bg);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+header {
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.resources-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--share-button-bg);
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: all 0.3s;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.resources-link:hover {
+    color: var(--share-button-hover);
+    background-color: rgba(76, 175, 80, 0.2);
+}
+
+.main-content {
+    margin-bottom: 2rem;
+}
+
+.wooden-fish-container {
+    margin-bottom: 2rem;
+}
+
+.wooden-fish {
+    transition: transform 0.1s;
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+    -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
+}
+
+.wooden-fish:active, .wooden-fish.active {
+    transform: scale(0.95);
+}
+
+.wooden-fish img {
+    width: 200px;
+    height: auto;
+    max-width: 100%;
+}
+
+.merit-count {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.merit-label {
+    margin-left: 0.5rem;
+}
+
+.instruction {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.wish-display {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background-color: rgba(212, 160, 23, 0.1);
+    border-radius: 8px;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(212, 160, 23, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(212, 160, 23, 0);
+    }
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--button-bg);
+    border: none;
+    border-radius: 5px;
+    font-family: 'Ma Shan Zheng', cursive, sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px; /* 移动端可触摸按钮的最小高度 */
+}
+
+.control-btn:hover {
+    background-color: var(--button-hover);
+}
+
+.vip-btn {
+    background-color: var(--vip-button-bg);
+    color: var(--text-color);
+}
+
+.vip-btn:hover {
+    background-color: var(--vip-button-hover);
+}
+
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.share-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--share-button-bg);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Ma Shan Zheng', cursive, sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px; /* 移动端可触摸按钮的最小高度 */
+}
+
+.share-btn:hover {
+    background-color: var(--share-button-hover);
+}
+
+.share-count {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.merit-popup {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s, transform 1s;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 0.3rem 0.6rem;
+    border-radius: 1rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 - 超小屏幕（手机竖屏） */
+@media (max-width: 480px) {
+    body {
+        padding: 0.5rem;
+    }
+    
+    .container {
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .wooden-fish img {
+        width: 120px;
+    }
+    
+    .merit-count {
+        font-size: 1.8rem;
+    }
+    
+    .instruction {
+        font-size: 1rem;
+    }
+    
+    .control-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .share-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* 响应式设计 - 小屏幕（手机） */
+@media (min-width: 481px) and (max-width: 767px) {
+    .container {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    .wooden-fish img {
+        width: 150px;
+    }
+    
+    .merit-count {
+        font-size: 2rem;
+    }
+    
+    .controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .control-btn {
+        width: 100%;
+    }
+}
+
+/* 响应式设计 - 中等屏幕（平板） */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .container {
+        max-width: 90%;
+    }
+    
+    .wooden-fish img {
+        width: 180px;
+    }
+    
+    .controls {
+        flex-wrap: wrap;
+    }
+}
+
+/* 响应式设计 - 大屏幕（桌面） */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 800px;
+        padding: 2.5rem;
+    }
+    
+    h1 {
+        font-size: 3.5rem;
+    }
+    
+    .wooden-fish img {
+        width: 220px;
+    }
+    
+    .merit-count {
+        font-size: 3rem;
+    }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #f0f0f0;
+        --bg-color: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+        --container-bg: rgba(30, 30, 30, 0.9);
+        --button-bg: #3a3a3a;
+        --button-hover: #4a4a4a;
+    }
+} 

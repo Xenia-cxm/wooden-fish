@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#d4a017">
+    <meta name="description" content="电子木鱼资源下载页面。下载木鱼图片和音效，开始您的功德之旅。">
+    <title>电子木鱼 - 资源下载</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .resource-container {
+            margin: 2rem 0;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .resource-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        .resource-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .resource-title {
+            font-size: 1.3rem;
+            color: var(--primary-color, #d4a017);
+            margin-bottom: 0.5rem;
+        }
+        .resource-description {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        .resource-preview {
+            margin: 1rem 0;
+            text-align: center;
+        }
+        .resource-preview img {
+            max-width: 200px;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .resource-preview audio {
+            max-width: 100%;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--share-button-bg, #4CAF50);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-top: 0.5rem;
+            transition: background-color 0.3s;
+            min-height: 44px;
+            line-height: 1.5;
+        }
+        .download-btn:hover {
+            background-color: var(--share-button-hover, #45a049);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #666;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+            background-color: rgba(0,0,0,0.05);
+        }
+        .instructions {
+            background-color: #fff3cd;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .resource-container {
+                padding: 0.8rem;
+                margin: 1rem 0;
+            }
+            .resource-title {
+                font-size: 1.1rem;
+            }
+            .resource-preview img {
+                max-width: 150px;
+            }
+            .download-btn {
+                display: block;
+                width: 100%;
+                text-align: center;
+            }
+            .instructions {
+                font-size: 0.9rem;
+                padding: 0.8rem;
+            }
+        }
+        
+        /* 支持暗色模式 */
+        @media (prefers-color-scheme: dark) {
+            .resource-container {
+                background-color: rgba(50, 50, 50, 0.8);
+            }
+            .resource-item {
+                border-bottom-color: #444;
+            }
+            .resource-preview img {
+                border-color: #444;
+                background-color: #333;
+            }
+            .instructions {
+                background-color: rgba(255, 243, 205, 0.2);
+                color: #f0f0f0;
+            }
+            .back-link {
+                color: #ccc;
+            }
+            .back-link:hover {
+                background-color: rgba(255,255,255,0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>电子木鱼资源</h1>
+            <p class="subtitle">下载所需木鱼图片和音效</p>
+        </header>
+
+        <div class="instructions">
+            <p><strong>使用方法：</strong> 点击下载按钮保存资源，确保保存到 wooden-fish/assets 目录中，并确保文件名与指定的一致。</p>
+        </div>
+
+        <div class="resource-container">
+            <div class="resource-item">
+                <h2 class="resource-title">木鱼图片</h2>
+                <div class="resource-description">
+                    <p>将此图片保存为 <strong>wooden-fish.png</strong> 并放置在 assets 文件夹中。</p>
+                </div>
+                <div class="resource-preview">
+                    <img src="https://pic.616pic.com/ys_img/00/04/58/6ks75TlZTj.jpg" alt="木鱼图片">
+                </div>
+                <a href="https://pic.616pic.com/ys_img/00/04/58/6ks75TlZTj.jpg" download="wooden-fish.png" class="download-btn">下载木鱼图片</a>
+            </div>
+
+            <div class="resource-item">
+                <h2 class="resource-title">木鱼敲击音效</h2>
+                <div class="resource-description">
+                    <p>将此音效文件保存为 <strong>wooden-fish-sound.mp3</strong> 并放置在 assets 文件夹中。</p>
+                </div>
+                <div class="resource-preview">
+                    <audio controls>
+                        <source src="https://freesound.org/data/previews/444/444028_6142149-lq.mp3" type="audio/mpeg">
+                        您的浏览器不支持音频元素。
+                    </audio>
+                </div>
+                <a href="https://freesound.org/data/previews/444/444028_6142149-lq.mp3" download="wooden-fish-sound.mp3" class="download-btn">下载木鱼音效</a>
+            </div>
+        </div>
+
+        <a href="index.html" class="back-link">返回首页</a>
+    </div>
+</body>
+</html> 
